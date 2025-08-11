@@ -1,1 +1,19 @@
-<p>login-dialog works!</p>
+<h2 mat-dialog-title>Login</h2>
+<form [formGroup]="form" (ngSubmit)="submit()" mat-dialog-content>
+  <mat-form-field appearance="fill" class="full-width">
+    <mat-label>Username</mat-label>
+    <input matInput formControlName="Username" />
+  </mat-form-field>
+
+  <mat-form-field appearance="fill" class="full-width">
+    <mat-label>Password</mat-label>
+    <input matInput type="password" formControlName="Password" />
+  </mat-form-field>
+
+  <div mat-dialog-actions align="end">
+    <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid">
+      Login
+    </button>
+  </div>
+</form><p>login-dialog works!</p>
+

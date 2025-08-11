@@ -5,7 +5,7 @@ import { Observable, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
 import { environment } from '../environments/environment';
-const apiUrl = environment.apiUrl;
+//const apiUrl = environment.apiUrl;
 
 
 // Optional: light typings so your components get IntelliSense
