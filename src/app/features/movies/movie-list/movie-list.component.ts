@@ -1,83 +1,86 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
-import { MatGridListModule } from '@angular/material/grid-list';
-import { MatCardModule } from '@angular/material/card';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { FetchApiDataService, Movie, User } from '../../fetch-api-data.service';
-import { MovieCardComponent } from './movie-card.component';
+
+import {
+  FetchApiDataService,
+  Movie,
+  User
+} from '../../../fetch-api-data.service'; // <-- fixed path (3 levels up)
+
+import { MovieCardComponent } from '../movie-card/movie-card.component'; // <-- fixed path
 
 @Component({
   selector: 'app-movie-list',
   standalone: true,
-  imports: [CommonModule, MatGridListModule, MatCardModule, MatButtonModule, MatIconModule, MatSnackBarModule, MovieCardComponent],
-  template: `
-  <div style="padding:16px;">
-    <div *ngIf="movies().length === 0">The list is empty!</div>
-    <div class="grid">
-      <app-movie-card
-        *ngFor="let m of movies()"
-        [movie]="m"
-        [favorite]="isFavorite(m._id)"
-        (toggleFavorite)="onToggleFavorite(m._id)">
-      </app-movie-card>
-    </div>
-  </div>
-  `,
-  styles: [`
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 16px;
-    }
-  `]
+  imports: [
+    CommonModule,
+    MatButtonModule,
+    MatIconModule,
+    MatSnackBarModule,
+    MovieCardComponent
+  ],
+  templateUrl: './movie-list.component.html',
+  styleUrls: ['./movie-list.component.scss']
 })
 export class MovieListComponent implements OnInit {
   private api = inject(FetchApiDataService);
-  private snack = inject(MatSnackBar);
-  private router = inject(Router);
+  private snackBar = inject(MatSnackBar);
 
   movies = signal<Movie[]>([]);
-  user = signal<User | null>(this.getStoredUser());
+  user = signal<User | null>(null);
+  loading = signal<boolean>(false);
 
-  ngOnInit() {
-    const token = localStorage.getItem('token');
-    if (!token || !this.user()) {
-      this.router.navigateByUrl('/');
+  ngOnInit(): void {
+    this.fetchUser();
+    this.fetchMovies();
+  }
+
+  private fetchUser(): void {
+    this.api.getUser().subscribe({
+      next: (u) => this.user.set(u),
+      error: () => this.snackBar.open('Failed to load user', 'OK', { duration: 3000 })
+    });
+  }
+
+  private fetchMovies(): void {
+    this.loading.set(true);
+    this.api.getAllMovies().subscribe({
+      next: (data: Movie[]) => this.movies.set(data),
+      error: () => this.snackBar.open('Failed to load movies', 'OK', { duration: 3000 }),
+      complete: () => this.loading.set(false)
+    });
+  }
+
+  isFavorite(movieId: string): boolean {
+    const u = this.user();
+    return !!u?.FavoriteMovies?.includes(movieId);
+  }
+
+  toggleFavorite(movieId: string): void {
+    const u = this.user();
+    if (!u) {
+      this.snackBar.open('Please log in first', 'OK', { duration: 2500 });
       return;
     }
 
-    this.api.getAllMovies().subscribe({
-      next: (data) => this.movies.set(data),
-      error: () => this.snack.open('Failed to load movies', 'Close', { duration: 3000 })
-    });
-  }
-
-  isFavorite = (movieId: string) =>
-    !!this.user()?.favoriteMovies?.includes(movieId);
-
-  onToggleFavorite(movieId: string) {
-    const u = this.user();
-    if (!u) return;
-
-    const inFav = u.favoriteMovies.includes(movieId);
-    const call = inFav ? this.api.removeFavorite(u.userId, movieId)
-                       : this.api.addFavorite(u.userId, movieId);
+    const inFav = u.FavoriteMovies?.includes(movieId);
+    const call = inFav
+      ? this.api.removeFavorite(u.Username, movieId)
+      : this.api.addFavorite(u.Username, movieId);
 
     call.subscribe({
-      next: (updatedUser) => {
+      next: (updatedUser: User) => {
         this.user.set(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        this.snack.open(inFav ? 'Removed from favorites' : 'Added to favorites', 'Close', { duration: 2000 });
+        this.snackBar.open(
+          inFav ? 'Removed from favorites' : 'Added to favorites',
+          'OK',
+          { duration: 2000 }
+        );
       },
-      error: () => this.snack.open('Failed to update favorites', 'Close', { duration: 3000 })
+      error: () => this.snackBar.open('Failed to update favorites', 'OK', { duration: 3000 })
     });
-  }
-
-  private getStoredUser(): User | null {
-    try { return JSON.parse(localStorage.getItem('user') || 'null'); }
-    catch { return null; }
   }
 }

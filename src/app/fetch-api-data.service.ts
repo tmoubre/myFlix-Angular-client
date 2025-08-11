@@ -2,114 +2,136 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 
-import { environment } from '../environments/environment';
-//const apiUrl = environment.apiUrl;
-
-
-// Optional: light typings so your components get IntelliSense
-export interface Movie {
-  _id: string;
-  Title: string;
-  Description: string;
-  Genre: { Name: string; Description: string };
-  Director: { Name: string; Bio: string; Birth?: string; Death?: string };
-  ImagePath?: string;
-  Featured?: boolean;
-}
-export interface User {
-  _id: string;
-  Username: string;
-  Email: string;
-  Birthday?: string;
-  FavoriteMovies: string[];
-}
+// 🔁 Set this to your deployed API (keep the trailing slash)
+const apiUrl = 'https://film-app-f9566a043197.herokuapp.com/';
 
 @Injectable({ providedIn: 'root' })
 export class FetchApiDataService {
-  private base = environment.apiUrl.replace(/\/+$/, ''); // strip trailing slash
-
   constructor(private http: HttpClient) {}
 
-  // ---------- helpers ----------
-  private authHeaders(): { headers: HttpHeaders } {
-    const token = localStorage.getItem('token') ?? '';
-    return { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) };
-  }
-  private extract<T>(res: T): T { return res || ({} as T); }
-  private handleError(error: HttpErrorResponse) {
-    const message =
-      error.error?.message ??
-      (typeof error.error === 'string' ? error.error : '') ||
-      `Request failed (${error.status})`;
-    return throwError(() => new Error(message));
+  // ---- Helpers --------------------------------------------------------------
+
+  private authHeaders(): HttpHeaders {
+    const token = localStorage.getItem('token') || '';
+    return new HttpHeaders({ Authorization: `Bearer ${token}` });
   }
 
-  // ---------- auth ----------
-  registerUser(body: { Username: string; Password: string; Email: string; Birthday?: string }): Observable<User> {
-    return this.http.post<User>(`${this.base}/users`, body).pipe(catchError(this.handleError));
+  // Generic pass-through mapper (kept to mirror course pattern)
+  private extractResponseData<T>(res: T): T {
+    return (res as any) ?? {};
   }
 
-  loginUser(body: { Username: string; Password: string }): Observable<{ token: string; user: User }> {
-    return this.http.post<{ token: string; user: User }>(`${this.base}/login`, body).pipe(catchError(this.handleError));
+  private handleError(error: HttpErrorResponse): Observable<never> {
+    if (error.error instanceof ErrorEvent) {
+      console.error('Client/network error:', error.error.message);
+    } else {
+      console.error(`API error ${error.status}:`, error.error || error.message);
+    }
+    return throwError(() => error);
   }
 
-  // ---------- movies ----------
-  getAllMovies(): Observable<Movie[]> {
-    return this.http.get<Movie[]>(`${this.base}/movies`, this.authHeaders())
-      .pipe(map(this.extract), catchError(this.handleError));
-  }
+  // ---- Auth ---------------------------------------------------------------
 
-  getOneMovie(title: string): Observable<Movie> {
-    return this.http.get<Movie>(`${this.base}/movies/${encodeURIComponent(title)}`, this.authHeaders())
-      .pipe(map(this.extract), catchError(this.handleError));
-  }
-
-  getDirector(name: string): Observable<Movie['Director']> {
-    return this.http.get<Movie['Director']>(`${this.base}/movies/directors/${encodeURIComponent(name)}`, this.authHeaders())
-      .pipe(map(this.extract), catchError(this.handleError));
-  }
-
-  getGenre(name: string): Observable<Movie['Genre']> {
-    return this.http.get<Movie['Genre']>(`${this.base}/movies/genres/${encodeURIComponent(name)}`, this.authHeaders())
-      .pipe(map(this.extract), catchError(this.handleError));
-  }
-
-  // ---------- users ----------
-  getUser(username?: string): Observable<User> {
-    const u = username ?? localStorage.getItem('user') ?? '';
-    return this.http.get<User>(`${this.base}/users/${encodeURIComponent(u)}`, this.authHeaders())
-      .pipe(map(this.extract), catchError(this.handleError));
-  }
-
-  getFavoriteMovies(username?: string): Observable<string[]> {
-    const u = username ?? localStorage.getItem('user') ?? '';
-    return this.http.get<string[]>(`${this.base}/users/${encodeURIComponent(u)}/movies`, this.authHeaders())
-      .pipe(map(this.extract), catchError(this.handleError));
-  }
-
-  addFavoriteMovie(movieId: string, username?: string): Observable<User> {
-    const u = username ?? localStorage.getItem('user') ?? '';
-    return this.http.post<User>(`${this.base}/users/${encodeURIComponent(u)}/movies/${encodeURIComponent(movieId)}`, {}, this.authHeaders())
+  /** POST /users — Register a new user */
+  userRegistration(userDetails: {
+    Username: string;
+    Password: string;
+    Email: string;
+    Birthday?: string;
+  }): Observable<any> {
+    return this.http
+      .post(`${apiUrl}users`, userDetails)
       .pipe(catchError(this.handleError));
   }
 
-  removeFavoriteMovie(movieId: string, username?: string): Observable<User> {
-    const u = username ?? localStorage.getItem('user') ?? '';
-    return this.http.delete<User>(`${this.base}/users/${encodeURIComponent(u)}/movies/${encodeURIComponent(movieId)}`, this.authHeaders())
+  /** POST /login — Log in and receive token */
+  userLogin(credentials: { Username: string; Password: string }): Observable<{ token: string; user: any }> {
+    return this.http
+      .post<{ token: string; user: any }>(`${apiUrl}login`, credentials)
       .pipe(catchError(this.handleError));
   }
 
-  editUser(update: Partial<Pick<User, 'Username' | 'Email' | 'Birthday'>> & { Password?: string }, username?: string): Observable<User> {
-    const u = username ?? localStorage.getItem('user') ?? '';
-    return this.http.put<User>(`${this.base}/users/${encodeURIComponent(u)}`, update, this.authHeaders())
-      .pipe(catchError(this.handleError));
+  // ---- Movies -------------------------------------------------------------
+
+  /** GET /movies — All movies */
+  getAllMovies(): Observable<any[]> {
+    return this.http
+      .get<any[]>(`${apiUrl}movies`, { headers: this.authHeaders() })
+      .pipe(map(this.extractResponseData), catchError(this.handleError));
   }
 
-  deleteUser(username?: string): Observable<{ message: string }> {
-    const u = username ?? localStorage.getItem('user') ?? '';
-    return this.http.delete<{ message: string }>(`${this.base}/users/${encodeURIComponent(u)}`, this.authHeaders())
-      .pipe(catchError(this.handleError));
+  /** GET /movies/:movieId — One movie by id */
+  getOneMovie(movieId: string): Observable<any> {
+    return this.http
+      .get(`${apiUrl}movies/${encodeURIComponent(movieId)}`, { headers: this.authHeaders() })
+      .pipe(map(this.extractResponseData), catchError(this.handleError));
+  }
+
+  /** GET /directors/:name — Director details */
+  getDirector(name: string): Observable<any> {
+    return this.http
+      .get(`${apiUrl}directors/${encodeURIComponent(name)}`, { headers: this.authHeaders() })
+      .pipe(map(this.extractResponseData), catchError(this.handleError));
+  }
+
+  /** GET /genres/:name — Genre details */
+  getGenre(name: string): Observable<any> {
+    return this.http
+      .get(`${apiUrl}genres/${encodeURIComponent(name)}`, { headers: this.authHeaders() })
+      .pipe(map(this.extractResponseData), catchError(this.handleError));
+  }
+
+  // ---- User ---------------------------------------------------------------
+
+  /** GET /users/:username — Get user profile */
+  getUser(username: string): Observable<any> {
+    return this.http
+      .get(`${apiUrl}users/${encodeURIComponent(username)}`, { headers: this.authHeaders() })
+      .pipe(map(this.extractResponseData), catchError(this.handleError));
+  }
+
+  /** GET /users/:username/movies — Favorite movies for a user */
+  getFavoriteMovies(username: string): Observable<any[]> {
+    return this.http
+      .get<any[]>(`${apiUrl}users/${encodeURIComponent(username)}/movies`, { headers: this.authHeaders() })
+      .pipe(map(this.extractResponseData), catchError(this.handleError));
+  }
+
+  /** POST /users/:username/movies/:movieId — Add to favorites */
+  addMovieToFavorites(username: string, movieId: string): Observable<any> {
+    return this.http
+      .post(`${apiUrl}users/${encodeURIComponent(username)}/movies/${encodeURIComponent(movieId)}`, null, {
+        headers: this.authHeaders(),
+      })
+      .pipe(map(this.extractResponseData), catchError(this.handleError));
+  }
+
+  /** DELETE /users/:username/movies/:movieId — Remove from favorites */
+  deleteMovieFromFavorite(username: string, movieId: string): Observable<any> {
+    return this.http
+      .delete(`${apiUrl}users/${encodeURIComponent(username)}/movies/${encodeURIComponent(movieId)}`, {
+        headers: this.authHeaders(),
+      })
+      .pipe(map(this.extractResponseData), catchError(this.handleError));
+  }
+
+  /** PUT /users/:username — Edit user */
+  editUser(
+    username: string,
+    updates: Partial<{ Username: string; Password: string; Email: string; Birthday: string }>
+  ): Observable<any> {
+    return this.http
+      .put(`${apiUrl}users/${encodeURIComponent(username)}`, updates, { headers: this.authHeaders() })
+      .pipe(map(this.extractResponseData), catchError(this.handleError));
+  }
+
+  /** DELETE /users/:username — Delete user */
+  deleteUser(username: string): Observable<any> {
+    return this.http
+      .delete(`${apiUrl}users/${encodeURIComponent(username)}`, { headers: this.authHeaders() })
+      .pipe(map(this.extractResponseData), catchError(this.handleError));
   }
 }
+

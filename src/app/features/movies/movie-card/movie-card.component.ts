@@ -3,27 +3,30 @@ import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { Movie } from '../../fetch-api-data.service';
+import { Movie } from '../../../fetch-api-data.service';
 
 @Component({
   selector: 'app-movie-card',
   standalone: true,
   imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule],
-  template: `
+template: `
   <mat-card>
-    <img *ngIf="movie.imageUrl" [src]="movie.imageUrl" [alt]="movie.title" style="width:100%; height:300px; object-fit:cover;" />
-    <mat-card-title>{{ movie.title }}</mat-card-title>
+    <img *ngIf="movie?.ImagePath" [src]="movie.ImagePath" [alt]="movie?.Title"
+         style="width:100%; height:300px; object-fit:cover;" />
+    <mat-card-header>
+      <mat-card-title>{{ movie?.Title }}</mat-card-title>
+    </mat-card-header>
     <mat-card-content>
-      <p>{{ movie.description }}</p>
+      <p>{{ movie?.Description }}</p>
     </mat-card-content>
+
     <mat-card-actions>
-      <button mat-stroked-button (click)="toggleFavorite.emit()" [color]="favorite ? 'warn' : undefined">
-        <mat-icon>{{ favorite ? 'favorite' : 'favorite_border' }}</mat-icon>
-        {{ favorite ? 'Unfavorite' : 'Favorite' }}
+      <button mat-icon-button (click)="toggleFavorite(movie?._id)">
+        <mat-icon>{{ isFavorite(movie?._id) ? 'favorite' : 'favorite_border' }}</mat-icon>
       </button>
     </mat-card-actions>
   </mat-card>
-  `
+`,
 })
 export class MovieCardComponent {
   @Input() movie!: Movie;

@@ -1,34 +1,32 @@
-import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+// src/app/fetch-api-data.service.spec.ts
+import { TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { FetchApiDataService, NewUser, User } from './fetch-api-data.service';
+import { environment } from '../environments/environment';
 
-// Use your actual API base:
-const API = 'https://film-app-f9566a043197.herokuapp.com/';
+describe('FetchApiDataService', () => {
+  let service: FetchApiDataService;
+  let httpMock: HttpTestingController;
 
-@Injectable({ providedIn: 'root' })
-export class FetchApiDataService {
-  constructor(private http: HttpClient) {}
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [FetchApiDataService]
+    });
+    service = TestBed.inject(FetchApiDataService);
+    httpMock = TestBed.inject(HttpTestingController);
+  });
 
-  /** -------- AUTH -------- */
+  afterEach(() => httpMock.verify());
 
-  // Matches your React login.jsx (userId/password, POST /login)
-  userLogin(credentials: { userId: string; password: string }): Observable<any> {
-    return this.http.post(API + 'login', credentials).pipe(catchError(this.handleError));
-  }
+  it('register() should POST /users', () => {
+    const payload: NewUser = { Username: 'a', Password: 'b', Email: 'a@b.com' };
+    const mock: User = { _id: '1', Username: 'a', Email: 'a@b.com', FavoriteMovies: [] };
 
-  /** -------- MOVIES (examples; keep/add what you need) -------- */
-  getAllMovies(): Observable<any[]> {
-    return this.http.get<any[]>(API + 'movies', this.auth()).pipe(catchError(this.handleError));
-  }
-
-  /** -------- USER (examples) -------- */
-  getUser(username: string): Observable<any> {
-    return this.http.get(API + `users/${encodeURIComponent(username)}`, this.auth())
-      .pipe(map(this.extract), catchError(this.handleError));
-  }
-
-  /** -------- Helpers -------- */
-  private auth() {
-    const token = localStorage.getItem('token') || '';
-    return { headers:
+    service.register(payload).subscribe(u => expect(u).toEqual(mock));
+    const req = httpMock.expectOne(`${environment.apiUrl.replace(/\/+$/, '')}/users`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(payload);
+    req.flush(mock);
+  });
+});
