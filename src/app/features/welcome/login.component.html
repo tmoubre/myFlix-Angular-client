@@ -1,0 +1,24 @@
+<form [formGroup]="form" (ngSubmit)="submit()" style="display:grid; gap:12px; max-width:420px; margin:32px auto">
+  <h2>Sign in</h2>
+
+  <mat-form-field appearance="outline">
+    <mat-label>User ID</mat-label>
+    <input matInput formControlName="userId" autocomplete="username" />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Password</mat-label>
+    <input matInput type="password" formControlName="password" autocomplete="current-password" />
+  </mat-form-field>
+
+  <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || loading">
+    {{ loading ? 'Signing in…' : 'Sign in' }}
+  </button>
+
+  <!-- Use a button to avoid any routerLink/import pitfalls -->
+  <button mat-button type="button" (click)="goRegister()">Create an account</button>
+</form>
+
+
+
+

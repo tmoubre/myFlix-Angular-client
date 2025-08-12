@@ -1,0 +1,57 @@
+<mat-card class="profile">
+  <h2>Profile</h2>
+
+  <form class="form" (ngSubmit)="save()">
+    <mat-form-field appearance="fill">
+      <mat-label>Username</mat-label>
+      <input matInput [(ngModel)]="edit.userId" name="userId" />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill">
+      <mat-label>Email</mat-label>
+      <input matInput type="email" [(ngModel)]="edit.email" name="email" />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill">
+      <mat-label>Birthday</mat-label>
+      <input matInput type="date" [(ngModel)]="edit.birthday" name="birthday" />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill">
+      <mat-label>New password (optional)</mat-label>
+      <input matInput type="password" [(ngModel)]="edit.password" name="password" />
+    </mat-form-field>
+
+    <div class="actions">
+      <button mat-raised-button color="primary" type="submit" [disabled]="saving">Save</button>
+      <button mat-button type="button" (click)="deleteAccount()">Delete account</button>
+    </div>
+  </form>
+
+  <h3>Favorite Movies</h3>
+
+  <ng-container *ngIf="favorites?.length; else none">
+    <section class="favorites-grid">
+      <div class="fav-tile" *ngFor="let m of favorites" [title]="m.title" (click)="openDetails(m)">
+        <img *ngIf="m.ImageUrl; else noimg" [src]="m.ImageUrl" [alt]="m.title" />
+        <ng-template #noimg>
+          <div class="placeholder">No image</div>
+        </ng-template>
+
+        <div class="tile-caption">
+          <div class="tile-title">{{ m.title }}</div>
+          <button
+            mat-icon-button
+            aria-label="Remove from favorites"
+            (click)="$event.stopPropagation(); removeFavorite(m._id)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </div>
+    </section>
+  </ng-container>
+
+  <ng-template #none>
+    <p class="muted">No favorites yet.</p>
+  </ng-template>
+</mat-card>

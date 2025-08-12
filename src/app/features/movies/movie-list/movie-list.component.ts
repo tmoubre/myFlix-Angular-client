@@ -1,37 +1,39 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+// src/app/features/movies/movie-list/movie-list.component.ts
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
-import {
-  FetchApiDataService,
-  Movie,
-  User
-} from '../../../fetch-api-data.service'; // <-- fixed path (3 levels up)
+import { FetchApiDataService, User } from '../../../fetch-api-data.service';
+import { Movie } from '../../../models/movie.models';
 
-import { MovieCardComponent } from '../movie-card/movie-card.component'; // <-- fixed path
+import { MovieCardComponent } from '../movie-card/movie-card.component';
+import { MovieDetailsDialog } from './movie-details.dialog';
 
 @Component({
   selector: 'app-movie-list',
   standalone: true,
   imports: [
     CommonModule,
-    MatButtonModule,
-    MatIconModule,
+    MatDialogModule,
     MatSnackBarModule,
+    MatProgressSpinnerModule,
     MovieCardComponent
   ],
   templateUrl: './movie-list.component.html',
   styleUrls: ['./movie-list.component.scss']
 })
 export class MovieListComponent implements OnInit {
-  private api = inject(FetchApiDataService);
-  private snackBar = inject(MatSnackBar);
+  movies: Movie[] = [];
+  user?: User;
+  loading = false;
 
-  movies = signal<Movie[]>([]);
-  user = signal<User | null>(null);
-  loading = signal<boolean>(false);
+  constructor(
+    private api: FetchApiDataService,
+    private dialog: MatDialog,
+    private snack: MatSnackBar
+  ) {}
 
   ngOnInit(): void {
     this.fetchUser();
@@ -39,48 +41,64 @@ export class MovieListComponent implements OnInit {
   }
 
   private fetchUser(): void {
-    this.api.getUser().subscribe({
-      next: (u) => this.user.set(u),
-      error: () => this.snackBar.open('Failed to load user', 'OK', { duration: 3000 })
-    });
+    try {
+      this.api.getUser().subscribe({
+        next: (u) => (this.user = u),
+        error: () => { /* ignore before login */ }
+      });
+    } catch {
+      // thrown if no user is stored; safe to ignore on first load
+    }
   }
 
   private fetchMovies(): void {
-    this.loading.set(true);
+    this.loading = true;
     this.api.getAllMovies().subscribe({
-      next: (data: Movie[]) => this.movies.set(data),
-      error: () => this.snackBar.open('Failed to load movies', 'OK', { duration: 3000 }),
-      complete: () => this.loading.set(false)
+      next: (list) => (this.movies = list),
+      error: () => this.snack.open('Failed to load movies', 'OK', { duration: 3000 }),
+      complete: () => (this.loading = false)
     });
   }
 
   isFavorite(movieId: string): boolean {
-    const u = this.user();
-    return !!u?.FavoriteMovies?.includes(movieId);
+    return !!this.user?.favoriteMovies?.includes(movieId);
   }
 
   toggleFavorite(movieId: string): void {
-    const u = this.user();
-    if (!u) {
-      this.snackBar.open('Please log in first', 'OK', { duration: 2500 });
+    if (!this.user) {
+      this.snack.open('Please sign in to manage favorites', 'OK', { duration: 3000 });
       return;
     }
+    const inFav = this.isFavorite(movieId);
+    const call$ = inFav
+      ? this.api.removeFavorite(this.user.userId, movieId)
+      : this.api.addFavorite(this.user.userId, movieId);
 
-    const inFav = u.FavoriteMovies?.includes(movieId);
-    const call = inFav
-      ? this.api.removeFavorite(u.Username, movieId)
-      : this.api.addFavorite(u.Username, movieId);
-
-    call.subscribe({
-      next: (updatedUser: User) => {
-        this.user.set(updatedUser);
-        this.snackBar.open(
-          inFav ? 'Removed from favorites' : 'Added to favorites',
-          'OK',
-          { duration: 2000 }
-        );
-      },
-      error: () => this.snackBar.open('Failed to update favorites', 'OK', { duration: 3000 })
+    call$.subscribe({
+      next: (u) => (this.user = u),
+      error: () => this.snack.open('Could not update favorites', 'OK', { duration: 3000 })
     });
   }
+
+openDetails(m: Movie): void {
+  const ref = this.dialog.open(MovieDetailsDialog, {
+    width: 'min(1000px, 95vw)',
+    maxHeight: '90vh',
+    data: {
+      title: m.title,
+      description: m.description,
+      image: m.ImageUrl,
+      genreName: m.genre?.name ?? '',
+      directorName: m.director?.name ?? '',
+      favorite: this.isFavorite(m._id)   // <-- pass current state
+    }
+  });
+
+  ref.afterClosed().subscribe(res => {
+    if (res?.toggle) {
+      this.toggleFavorite(m._id);       // <-- perform the add/remove
+    }
+  });
+}
+
 }

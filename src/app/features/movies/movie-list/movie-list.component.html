@@ -1,0 +1,25 @@
+<!-- src/app/features/movies/movie-list/movie-list.component.html -->
+<ng-container *ngIf="loading; else loaded">
+  <div class="center">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+</ng-container>
+
+<ng-template #loaded>
+  <ng-container *ngIf="movies?.length; else empty">
+    <section class="grid">
+      <app-movie-card
+        *ngFor="let m of movies"
+        [movie]="m"
+        [favorite]="isFavorite(m._id)"
+        (toggle)="toggleFavorite(m._id)"
+        (view)="openDetails(m)">
+      </app-movie-card>
+    </section>
+  </ng-container>
+
+  <ng-template #empty>
+    <div class="center muted">No movies to display.</div>
+  </ng-template>
+</ng-template>
+

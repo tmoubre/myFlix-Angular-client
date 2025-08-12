@@ -1,0 +1,56 @@
+.movie-card {
+  position: relative;             /* anchor for the absolute heart */
+  display: grid;
+  gap: 8px;
+  cursor: pointer;
+  padding-bottom: 44px;           /* breathing room so heart doesn't overlap text */
+}
+
+.poster-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #eee;
+
+  img, .placeholder {
+    width: 100%;
+    height: 260px;
+    object-fit: cover;
+    display: block;
+  }
+
+  .placeholder {
+    display: grid;
+    place-items: center;
+    color: #666;
+    font-size: 12px;
+  }
+}
+
+/* Heart in the bottom-right of the CARD */
+.fav-btn {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  background: rgba(255,255,255,.9);
+  border-radius: 999px;
+  backdrop-filter: blur(2px);
+  transition: transform .12s ease, box-shadow .12s ease;
+
+  &:hover {
+    transform: scale(1.06);
+    box-shadow: 0 6px 18px rgba(0,0,0,.12);
+  }
+
+  &.is-fav {
+    background: rgba(255,255,255,.98); /* icon color handled inline */
+  }
+}
+
+.desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+

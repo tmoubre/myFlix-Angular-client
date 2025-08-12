@@ -1,17 +1,20 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+// src/app/features/profile/profile.component.ts
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { FormsModule } from '@angular/forms';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import {
-  FetchApiDataService,
-  Movie,
-  User,
-  UpdateUserPayload
-} from '../../fetch-api-data.service'; // <-- correct (2 levels up)
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 
-import { MovieCardComponent } from '../movies/movie-card/movie-card.component'; // <-- fixed path
+import { FetchApiDataService, User } from '../../fetch-api-data.service';
+import { Movie } from '../../models/movie.models';
+import { MovieDetailsDialog } from '../movies/movie-list/movie-details.dialog';
+
+type UserWithDates = User & { birthDate?: string; birthday?: string };
 
 @Component({
   selector: 'app-profile',
@@ -19,126 +22,174 @@ import { MovieCardComponent } from '../movies/movie-card/movie-card.component'; 
   imports: [
     CommonModule,
     FormsModule,
-    ReactiveFormsModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
     MatButtonModule,
     MatIconModule,
     MatSnackBarModule,
-    MovieCardComponent
+    MatDialogModule
   ],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss']
 })
 export class ProfileComponent implements OnInit {
-  private api = inject(FetchApiDataService);
-  private fb = inject(FormBuilder);
-  private snackBar = inject(MatSnackBar);
+  user?: UserWithDates;
+  movies: Movie[] = [];
+  favorites: Movie[] = [];
+  saving = false;
 
-  user = signal<User | null>(null);
-  movies = signal<Movie[]>([]);
-  favMovies = computed(() => {
-    const u = this.user();
-    if (!u?.FavoriteMovies?.length) return [];
-    const favSet = new Set(u.FavoriteMovies);
-    return this.movies().filter(m => favSet.has(m._id));
-  });
+  // bound to the form
+  edit: Partial<{ userId: string; email: string; birthday: string; password: string }> = {};
 
-  form!: FormGroup;
+  constructor(
+    private api: FetchApiDataService,
+    private snack: MatSnackBar,
+    private dialog: MatDialog
+  ) {}
 
-  ngOnInit(): void {
-    this.buildForm();
-    this.loadUser();
-    this.loadMovies();
-  }
+  ngOnInit(): void { this.loadAll(); }
 
-  private buildForm(): void {
-    this.form = this.fb.group({
-      Username: ['', [Validators.required]],
-      Password: [''],
-      Email: ['', [Validators.required, Validators.email]],
-      Birthday: ['']
-    });
-  }
-
-  private loadUser(): void {
+  private loadAll(): void {
     this.api.getUser().subscribe({
-      next: (u: User) => {
-        this.user.set(u);
-        this.form.patchValue({
-          Username: u.Username,
-          Email: u.Email,
-          Birthday: u.Birthday ? new Date(u.Birthday).toISOString().substring(0, 10) : ''
+      next: (u) => {
+        this.user = u as UserWithDates;
+        this.fillFormFromUser(this.user);
+
+        this.api.getAllMovies().subscribe({
+          next: (list) => { this.movies = list; this.computeFavorites(); }
         });
-      },
-      error: () => this.snackBar.open('Failed to load user', 'OK', { duration: 3000 })
+      }
     });
   }
 
-  private loadMovies(): void {
-    this.api.getAllMovies().subscribe({
-      next: (data: Movie[]) => this.movies.set(data),
-      error: () => this.snackBar.open('Failed to load movies', 'OK', { duration: 3000 })
-    });
-  }
-
-  isFavorite(movieId: string): boolean {
-    const u = this.user();
-    return !!u?.FavoriteMovies?.includes(movieId);
-  }
-
-  toggleFavorite(movieId: string): void {
-    const u = this.user();
-    if (!u) return;
-
-    const inFav = u.FavoriteMovies?.includes(movieId);
-    const call = inFav
-      ? this.api.removeFavorite(u.Username, movieId)
-      : this.api.addFavorite(u.Username, movieId);
-
-    call.subscribe({
-      next: (updated: User) => {
-        this.user.set(updated);
-        this.snackBar.open(
-          inFav ? 'Removed from favorites' : 'Added to favorites',
-          'OK',
-          { duration: 2000 }
-        );
-      },
-      error: () => this.snackBar.open('Could not update favorites', 'OK', { duration: 3000 })
-    });
-  }
-
-  saveProfile(): void {
-    const current = this.user();
-    if (!current) return;
-
-    const payload: UpdateUserPayload = {
-      Username: this.form.value.Username,
-      // Only send Password if provided
-      ...(this.form.value.Password ? { Password: this.form.value.Password } : {}),
-      Email: this.form.value.Email,
-      Birthday: this.form.value.Birthday ? new Date(this.form.value.Birthday) : undefined
+  /** Centralize how we copy values into the form */
+  private fillFormFromUser(u: UserWithDates): void {
+    const iso = this.getBirthdayIso(u);
+    this.edit = {
+      userId: u.userId,
+      email: u.email,
+      birthday: this.isoToDateInput(iso) // yyyy-MM-dd w/o timezone shift
     };
+  }
 
-    this.api.updateUser(current.Username, payload).subscribe({
-      next: (updated: User) => {
-        this.user.set(updated);
-        this.snackBar.open('Profile updated', 'OK', { duration: 2000 });
+  private computeFavorites(): void {
+    const ids = this.user?.favoriteMovies ?? [];
+    this.favorites = this.movies.filter(m => ids.includes(m._id));
+  }
+
+  /** ----- Favorites & Dialog ----- */
+  openDetails(m: Movie): void {
+    const ref = this.dialog.open(MovieDetailsDialog, {
+      width: 'min(1000px, 95vw)',
+      maxHeight: '90vh',
+      data: {
+        title: m.title,
+        description: m.description,
+        image: m.ImageUrl,
+        genreName: m.genre?.name ?? '',
+        directorName: m.director?.name ?? '',
+        favorite: this.isFavorite(m._id)
+      }
+    });
+
+    ref.afterClosed().subscribe(result => {
+      if (result?.toggle) this.toggleFavorite(m._id);
+    });
+  }
+
+  isFavorite(id: string): boolean {
+    return !!this.user?.favoriteMovies?.includes(id);
+  }
+
+  toggleFavorite(id: string): void {
+    if (!this.user) return;
+    const op$ = this.isFavorite(id)
+      ? this.api.removeFavorite(this.user.userId, id)
+      : this.api.addFavorite(this.user.userId, id);
+
+    op$.subscribe({
+      next: (u) => { this.user = u as UserWithDates; this.computeFavorites(); },
+      error: () => this.snack.open('Could not update favorites', 'OK', { duration: 2200 })
+    });
+  }
+
+  removeFavorite(id: string): void {
+    if (!this.user) return;
+    this.api.removeFavorite(this.user.userId, id).subscribe({
+      next: (u) => {
+        this.user = u as UserWithDates;
+        this.computeFavorites();
+        this.snack.open('Removed from favorites', 'OK', { duration: 2000 });
       },
-      error: () => this.snackBar.open('Update failed', 'OK', { duration: 3000 })
+      error: () => this.snack.open('Could not remove favorite', 'OK', { duration: 2500 })
+    });
+  }
+
+  /** ----- Profile Save/Delete ----- */
+  save(): void {
+    if (!this.user) return;
+    this.saving = true;
+
+    const payload: any = {
+      userId: this.edit.userId?.trim(),
+      email: this.edit.email?.trim(),
+      // Send birthDate as ISO at UTC midnight to avoid off-by-one
+      birthDate: this.edit.birthday ? this.dateInputToIso(this.edit.birthday) : undefined
+    };
+    if (this.edit.password?.trim()) payload.password = this.edit.password.trim();
+
+    this.api.updateUser(this.user.userId, payload).subscribe({
+      next: (u) => {
+        // normalize locally (keep birthday/birthDate interchangeable)
+        this.user = { ...(u as any), birthday: (u as any).birthday ?? (u as any).birthDate } as UserWithDates;
+        this.fillFormFromUser(this.user);
+        try { localStorage.setItem('user', JSON.stringify(this.user)); } catch {}
+        this.computeFavorites();
+        this.snack.open('Profile updated', 'OK', { duration: 2000 });
+      },
+      error: () => this.snack.open('Could not update profile', 'OK', { duration: 2500 }),
+      complete: () => (this.saving = false)
     });
   }
 
   deleteAccount(): void {
-    const u = this.user();
-    if (!u) return;
+    if (!this.user) return;
+    if (!confirm('Delete your account? This cannot be undone.')) return;
 
-    this.api.deleteUser(u.Username).subscribe({
+    this.api.deleteUser(this.user.userId).subscribe({
       next: () => {
-        this.snackBar.open('Account deleted', 'OK', { duration: 2500 });
-        // You might also want to clear localStorage and redirect here.
-        localStorage.clear();
+        try { localStorage.removeItem('token'); localStorage.removeItem('user'); } catch {}
+        location.href = '/login';
       },
-      error: () => this.snackBar.open('Delete failed', 'OK', { duration: 3000 })
+      error: () => this.snack.open('Could not delete account', 'OK', { duration: 2500 })
     });
+  }
+
+  /** ----- Helpers (timezone-safe date handling) ----- */
+  private getBirthdayIso(u?: { birthday?: string; birthDate?: string }): string | undefined {
+    return u?.birthday ?? u?.birthDate;
+  }
+
+  /** Convert ISO (e.g., 1967-05-12T00:00:00.000Z) → '1967-05-12' without TZ shift */
+  private isoToDateInput(iso?: string): string | undefined {
+    if (!iso) return undefined;
+    const m = iso.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (m) return m[1];
+
+    // Fallback for odd strings: use UTC parts
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return undefined;
+    const y = d.getUTCFullYear();
+    const mo = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const da = String(d.getUTCDate()).padStart(2, '0');
+    return `${y}-${mo}-${da}`;
+  }
+
+  /** Convert 'yyyy-MM-dd' → ISO at UTC midnight (no local timezone math) */
+  private dateInputToIso(dateStr: string): string {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const ms = Date.UTC(y, (m ?? 1) - 1, d ?? 1, 0, 0, 0, 0);
+    return new Date(ms).toISOString();
   }
 }

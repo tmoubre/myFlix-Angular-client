@@ -1,0 +1,10 @@
+{
+  "/api": {
+    "target": "https://film-app-f9566a043197.herokuapp.com",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": { "^/api": "" },
+    "logLevel": "debug"
+  }
+}
+

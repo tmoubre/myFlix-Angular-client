@@ -1,19 +1,24 @@
-<h2 mat-dialog-title>Login</h2>
-<form [formGroup]="form" (ngSubmit)="submit()" mat-dialog-content>
-  <mat-form-field appearance="fill" class="full-width">
+<!-- src/app/features/login-dialog/login-dialog.html -->
+<h2 mat-dialog-title>Sign in</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()" mat-dialog-content style="display:grid; gap:12px">
+  <mat-form-field>
     <mat-label>Username</mat-label>
-    <input matInput formControlName="Username" />
+    <input matInput formControlName="userId" />
   </mat-form-field>
 
-  <mat-form-field appearance="fill" class="full-width">
+  <mat-form-field>
     <mat-label>Password</mat-label>
-    <input matInput type="password" formControlName="Password" />
+    <input matInput type="password" formControlName="password" />
   </mat-form-field>
 
   <div mat-dialog-actions align="end">
-    <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid">
-      Login
+    <button mat-button type="button" (click)="ref.close()">Cancel</button>
+    <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || loading">
+      {{ loading ? 'Signing in…' : 'Sign in' }}
     </button>
   </div>
-</form><p>login-dialog works!</p>
+</form>
+
+
 

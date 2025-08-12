@@ -1,0 +1,10 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  justify-items: center;
+  align-items: start;
+  padding: 8px 0;
+}
+app-movie-card { width: 100%; max-width: 320px; }
+.center { display: grid; place-items: center; padding: 32px; }
