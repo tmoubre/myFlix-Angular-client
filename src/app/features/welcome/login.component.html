@@ -1,23 +1,31 @@
-<form [formGroup]="form" (ngSubmit)="submit()" style="display:grid; gap:12px; max-width:420px; margin:32px auto">
+<div class="login-wrap" style="max-width:420px;margin:40px auto;display:grid;gap:16px;">
   <h2>Sign in</h2>
 
-  <mat-form-field appearance="outline">
-    <mat-label>User ID</mat-label>
-    <input matInput formControlName="userId" autocomplete="username" />
-  </mat-form-field>
+  <form [formGroup]="form" (ngSubmit)="submit()" style="display:grid;gap:12px;">
+    <mat-form-field appearance="outline">
+      <mat-label>User ID</mat-label>
+      <input matInput formControlName="userId" autocomplete="username" required />
+    </mat-form-field>
 
-  <mat-form-field appearance="outline">
-    <mat-label>Password</mat-label>
-    <input matInput type="password" formControlName="password" autocomplete="current-password" />
-  </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Password</mat-label>
+      <input matInput type="password" formControlName="password" autocomplete="current-password" required />
+    </mat-form-field>
 
-  <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || loading">
-    {{ loading ? 'Signing in…' : 'Sign in' }}
-  </button>
+    <button mat-raised-button color="primary" type="submit" [disabled]="loading || form.invalid">
+      {{ loading ? 'Signing in…' : 'Sign in' }}
+    </button>
+  </form>
 
-  <!-- Use a button to avoid any routerLink/import pitfalls -->
-  <button mat-button type="button" (click)="goRegister()">Create an account</button>
-</form>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+    <span>Don’t have an account?</span>
+    <!-- NEW: dialog button -->
+    <button mat-raised-button type="button" (click)="openRegisterDialog()" aria-label="Create an account">
+      Create an account
+    </button>
+  </div>
+</div>
+
 
 
 
