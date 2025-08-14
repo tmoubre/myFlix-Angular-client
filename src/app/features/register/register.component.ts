@@ -1,68 +1,102 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { Router } from '@angular/router';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { FetchApiDataService, RegisterPayload } from '../../fetch-api-data.service';
+import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { HttpErrorResponse } from '@angular/common/http';
+import { FetchApiDataService } from '../../fetch-api-data.service';
+
+/** Safely extract a readable message from various backend error shapes */
+function getApiErrorMessage(err: any): string {
+  try {
+    const e = err?.error ?? err;
+    if (!e) return '';
+    if (typeof e === 'string') return e;
+    if (typeof e?.message === 'string') return e.message;
+    if (Array.isArray(e?.errors) && e.errors.length) {
+      return e.errors.map((x: any) => x?.msg || x).join(', ');
+    }
+    return '';
+  } catch {
+    return '';
+  }
+}
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatSnackBarModule],
-  templateUrl: './register.component.html',
-  styleUrls: []
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatSnackBarModule,
+    MatDialogModule
+  ],
+  templateUrl: './register.component.html'
 })
 export class RegisterComponent {
-  loading = false;
-  form: FormGroup;
+  private fb = inject(FormBuilder);
+  private api = inject(FetchApiDataService);
+  private snack = inject(MatSnackBar);
+  private router = inject(Router);
+  // If the component is shown in a dialog, this will exist; otherwise undefined (fine).
+  dialogRef = inject(MatDialogRef<RegisterComponent>, { optional: true });
 
-  constructor(
-    private fb: FormBuilder,
-    private api: FetchApiDataService,
-    private router: Router,
-    private snack: MatSnackBar
-  ) {
-    this.form = this.fb.group({
-      userId: ['', [Validators.required, Validators.minLength(5), Validators.pattern(/^[a-zA-Z0-9]+$/)]],
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required]],
-      birthDate: [''] // optional
-    });
-  }
+  loading = false;
+
+  form = this.fb.group({
+    userId: ['', [Validators.required, Validators.minLength(3)]],
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(6)]],
+    birthday: [''] // optional
+  });
+
+  get f() { return this.form.controls; }
 
   submit(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid || this.loading) return;
     this.loading = true;
 
-    const body: RegisterPayload = {
-      userId: this.form.value.userId!,
-      email: this.form.value.email!,
-      password: this.form.value.password!,
-      birthDate: this.form.value.birthDate || undefined
-    };
+    const { userId, email, password, birthday } = this.form.value;
 
-    this.api.registerUser(body).subscribe({
+    this.api.registerUser({
+      userId: String(userId ?? ''),
+      email: String(email ?? ''),
+      password: String(password ?? ''),
+      birthDate: birthday ? String(birthday) : undefined
+    }).subscribe({
       next: () => {
-        this.snack.open('Account created. Please sign in.', 'OK', { duration: 3000 });
-        this.router.navigateByUrl('/login');
-      },
-      error: (err) => {
         this.loading = false;
-        // Friendly server error handling
-        if (err?.status === 400 && typeof err.error === 'string') {
-          this.snack.open(err.error, 'OK', { duration: 4000 }); // e.g. "<userId> already exists"
-        } else if (err?.status === 422 && err?.error?.errors?.length) {
-          const msg = err.error.errors.map((e: any) => e.msg).join(' • ');
-          this.snack.open(msg, 'OK', { duration: 5000 });
-        } else {
-          this.snack.open('Could not create account. Please try again.', 'OK', { duration: 4000 });
-        }
+        this.snack.open('Account created! Please sign in.', 'OK', { duration: 2500 });
+        this.dialogRef?.close(true);
+        this.router.navigate(['/login']);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.loading = false;
+
+        const apiMsg = getApiErrorMessage(err);
+        const isDuplicate = err.status === 409 || /exist|already|duplicate/i.test(apiMsg);
+
+        const msg = isDuplicate
+          ? 'Could not create account: user already exists.'
+          : (apiMsg || 'Could not create account. Please try again.');
+
+        this.snack.open(msg, 'OK', { duration: 3500 });
+        console.error(err);
       }
     });
   }
-}
 
+  goToLogin(): void {
+    this.router.navigate(['/login']);
+    this.dialogRef?.close();
+  }
+}
 

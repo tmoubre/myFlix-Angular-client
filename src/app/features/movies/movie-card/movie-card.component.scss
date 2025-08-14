@@ -1,56 +1,56 @@
+/* Keep all cards identical size without content overflow */
 .movie-card {
-  position: relative;             /* anchor for the absolute heart */
+  width: 280px;
   display: grid;
+  grid-template-rows: auto auto auto; /* header | poster | actions */
   gap: 8px;
-  cursor: pointer;
-  padding-bottom: 44px;           /* breathing room so heart doesn't overlap text */
+  box-sizing: border-box;
+  overflow: hidden; /* safety */
 }
 
+/* Header: allow wraps but reserve enough space for 2 lines of title */
+.card-header {
+  min-height: 92px;              /* tweak if your titles are longer */
+  padding-bottom: 0;
+  box-sizing: border-box;
+}
+
+/* Poster: fixed aspect ratio keeps every card same height */
 .poster-wrap {
-  border-radius: 12px;
+  width: 100%;
+  aspect-ratio: 2 / 3;           /* 280x420 look, scales responsively */
+  border-radius: 6px;
   overflow: hidden;
-  background: #eee;
-
-  img, .placeholder {
-    width: 100%;
-    height: 260px;
-    object-fit: cover;
-    display: block;
-  }
-
-  .placeholder {
-    display: grid;
-    place-items: center;
-    color: #666;
-    font-size: 12px;
-  }
+  cursor: pointer;
+  position: relative;
 }
 
-/* Heart in the bottom-right of the CARD */
-.fav-btn {
+.poster {
   position: absolute;
-  right: 8px;
-  bottom: 8px;
-  z-index: 2;
-  background: rgba(255,255,255,.9);
-  border-radius: 999px;
-  backdrop-filter: blur(2px);
-  transition: transform .12s ease, box-shadow .12s ease;
-
-  &:hover {
-    transform: scale(1.06);
-    box-shadow: 0 6px 18px rgba(0,0,0,.12);
-  }
-
-  &.is-fav {
-    background: rgba(255,255,255,.98); /* icon color handled inline */
-  }
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
-.desc {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+/* Actions pinned at the bottom */
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
 }
+
+.left-btns { display: flex; gap: 6px; }
+
+/* Ensure heart turns red even if theme tint is subtle */
+.fav-btn[aria-pressed="true"] mat-icon {
+  color: #e53935;
+}
+
+
+
+
+
 

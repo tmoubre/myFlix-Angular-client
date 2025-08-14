@@ -1,25 +1,84 @@
-<!-- src/app/features/movies/movie-list/movie-list.component.html -->
+<!-- Loading -->
 <ng-container *ngIf="loading; else loaded">
-  <div class="center">
+  <div class="loading-wrap">
     <mat-spinner diameter="40"></mat-spinner>
   </div>
 </ng-container>
 
 <ng-template #loaded>
+  <!-- Empty state -->
   <ng-container *ngIf="movies?.length; else empty">
-    <section class="grid">
+    <!-- Row controls -->
+    <div class="row-controls">
+      <button mat-icon-button (click)="scroll(row, -1)" aria-label="Scroll left">
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+      <button mat-icon-button (click)="scroll(row, 1)" aria-label="Scroll right">
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+    </div>
+
+    <!-- Horizontal scrolling row -->
+    <div class="row-scroll" #row>
       <app-movie-card
-        *ngFor="let m of movies"
+        *ngFor="let m of movies; trackBy: trackById"
+        class="row-item"
         [movie]="m"
-        [favorite]="isFavorite(m._id)"
-        (toggle)="toggleFavorite(m._id)"
-        (view)="openDetails(m)">
+        [favorite]="isFavorite(m)"
+        (toggle)="toggleFavorite(m)"
+        (view)="openDetails(m)"
+        (genre)="openGenre(m)"
+        (director)="openDirector(m)">
       </app-movie-card>
-    </section>
+    </div>
   </ng-container>
 
   <ng-template #empty>
-    <div class="center muted">No movies to display.</div>
+    <div class="empty">No movies to display.</div>
   </ng-template>
 </ng-template>
+
+<!-- Inline dialog templates (no extra files needed) -->
+<ng-template #synopsisTpl let-data>
+  <h2 mat-dialog-title>{{ data.title }}</h2>
+  <div mat-dialog-content>
+    <div style="white-space: pre-wrap; line-height: 1.45;">
+      {{ data.body }}
+    </div>
+  </div>
+  <div mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Close</button>
+  </div>
+</ng-template>
+
+<ng-template #genreTpl let-data>
+  <h2 mat-dialog-title>{{ data.title }}</h2>
+  <div mat-dialog-content>
+    <div style="white-space: pre-wrap; line-height: 1.45;">
+      {{ data.body }}
+    </div>
+  </div>
+  <div mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Close</button>
+  </div>
+</ng-template>
+
+<ng-template #directorTpl let-data>
+  <h2 mat-dialog-title>{{ data.title }}</h2>
+  <div mat-dialog-content>
+    <div style="white-space: pre-wrap; line-height: 1.45;">
+      {{ data.body }}
+    </div>
+  </div>
+  <div mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Close</button>
+  </div>
+</ng-template>
+
+
+
+
+
+
+
 

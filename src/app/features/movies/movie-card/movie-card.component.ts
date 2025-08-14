@@ -1,9 +1,12 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { Movie, LegacyMovie } from '../../../models/movie.models';
+
+const PLACEHOLDER = 'assets/poster-placeholder.jpg';
+// Keep HOST if you ever want absolute URLs; not required with the proxy
+const HOST = 'https://film-app-f9566a043197.herokuapp.com';
 
 @Component({
   selector: 'app-movie-card',
@@ -13,21 +16,56 @@ import { Movie, LegacyMovie } from '../../../models/movie.models';
   styleUrls: ['./movie-card.component.scss']
 })
 export class MovieCardComponent {
-  @Input() movie!: Movie | LegacyMovie;
-  @Input() favorite = false;                 // show red heart when true
-  @Output() view = new EventEmitter<Movie | LegacyMovie>();
-  @Output() toggle = new EventEmitter<void>(); // parent will add/remove favorite
+  @Input() movie!: any;
+  @Input() favorite = false;
 
-  get title(): string { const m: any = this.movie; return m.title ?? m.Title ?? ''; }
-  get description(): string { const m: any = this.movie; return m.description ?? m.Description ?? ''; }
-  get image(): string | undefined { const m: any = this.movie; return m.ImageUrl ?? m.ImagePath; }
+  @Output() view = new EventEmitter<void>();
+  @Output() genre = new EventEmitter<void>();
+  @Output() director = new EventEmitter<void>();
+  @Output() toggle = new EventEmitter<void>();
 
-  // keep card click opening the details, but stop it when clicking the heart
-  onHeartClick(ev: MouseEvent) {
-    ev.stopPropagation();
-    this.toggle.emit();
+  /** Normalize all the variations we’ve seen coming from the API */
+  posterSrc(m: any): string {
+    const abs = m?.ImageUrl ?? m?.imageUrl ?? m?.ImageURL ?? m?.image;
+    if (typeof abs === 'string' && /^https?:\/\//i.test(abs)) return abs;
+
+    const rel =
+      (typeof m?.ImageUrl === 'string' ? m.ImageUrl : '') ||
+      (typeof m?.imageUrl === 'string' ? m.imageUrl : '') ||
+      (typeof m?.ImagePath === 'string' ? m.ImagePath : '') ||
+      (typeof m?.imagePath === 'string' ? m.imagePath : '');
+
+    if (rel) {
+      if (/^\/?imageUrl\//i.test(rel)) return `/${rel.replace(/^\/+/, '')}`;
+      if (/^https?:\/\//i.test(rel)) return rel;
+      return `/imageUrl/${encodeURIComponent(rel)}`;
+      // If you prefer absolute: return `${HOST}/imageUrl/${encodeURIComponent(rel)}`;
+    }
+
+    return PLACEHOLDER;
   }
-  onCardClick() {
-    this.view.emit(this.movie);
+
+  get poster(): string { return this.posterSrc(this.movie); }
+
+  get title(): string {
+    return this.movie?.title ?? this.movie?.Title ?? 'Untitled';
+  }
+
+  get directorName(): string {
+    return this.movie?.Director?.Name ?? this.movie?.director?.name ?? 'Unknown';
+  }
+
+  onImgError(ev: Event): void {
+    (ev.target as HTMLImageElement).src = PLACEHOLDER;
   }
 }
+
+
+
+
+
+
+
+
+
+

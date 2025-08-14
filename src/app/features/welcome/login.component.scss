@@ -1,0 +1,44 @@
+.loading-wrap {
+  height: 40vh;
+  display: grid;
+  place-items: center;
+}
+
+.empty {
+  padding: 24px;
+  text-align: center;
+  opacity: 0.8;
+}
+
+/* Controls above the row (right-aligned) */
+.row-controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin: 4px 12px 0;
+}
+
+/* Horizontal scrolling row */
+.row-scroll {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: clamp(180px, 22vw, 240px); /* responsive card width */
+  gap: 12px;
+  padding: 8px 12px 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.row-item {
+  scroll-snap-align: start;
+}
+
+/* Optional: nicer horizontal scrollbar */
+.row-scroll::-webkit-scrollbar { height: 10px; }
+.row-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,.25);
+  border-radius: 8px;
+}
+

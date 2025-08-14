@@ -1,10 +1,79 @@
-.grid {
+/* Loading + empty states (unchanged) */
+.loading-wrap {
+  height: 40vh;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-  justify-items: center;
-  align-items: start;
-  padding: 8px 0;
+  place-items: center;
 }
-app-movie-card { width: 100%; max-width: 320px; }
-.center { display: grid; place-items: center; padding: 32px; }
+.empty {
+  padding: 24px;
+  text-align: center;
+  opacity: 0.8;
+}
+
+/* Controls above the row (right-aligned) */
+.row-controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 6px 16px 0;
+}
+
+/* Horizontal scrolling row */
+.row-scroll {
+  display: grid;
+  grid-auto-flow: column;
+
+  /* Responsive card width; tweak the middle value if you want bigger/smaller cards */
+  grid-auto-columns: clamp(200px, 22vw, 260px);
+
+  /* ⬅️ more space between cards */
+  gap: clamp(16px, 2.2vw, 28px);
+
+  /* extra bottom padding so the hover scale doesn't get clipped */
+  padding: 12px 16px 24px;
+
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Each card host element (the <app-movie-card> in HTML) */
+.row-item {
+  scroll-snap-align: start;
+  display: block;
+
+  /* smooth “pop” on hover */
+  transform-origin: center bottom;
+  transition: transform 160ms ease, filter 160ms ease, box-shadow 160ms ease;
+  will-change: transform;
+}
+
+/* Lift + scale on hover */
+.row-item:hover {
+  transform: scale(1.06);
+  z-index: 2; /* keep hovered card above neighbors */
+}
+
+/* Optional: add a shadow to the Material card inside the movie-card component */
+.row-item:hover ::ng-deep .mat-mdc-card {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+/* Optional: slightly round card corners if your card doesn't already */
+.row-item ::ng-deep .mat-mdc-card {
+  border-radius: 12px;
+}
+
+/* Nicer horizontal scrollbar (optional) */
+.row-scroll::-webkit-scrollbar { height: 10px; }
+.row-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,.25); border-radius: 8px; }
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .row-item { transition: none; }
+  .row-item:hover { transform: none; }
+}
+
+
+

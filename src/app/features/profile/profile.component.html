@@ -1,57 +1,84 @@
-<mat-card class="profile">
-  <h2>Profile</h2>
+<ng-container *ngIf="loading; else ready">
+  <div style="text-align:center;margin-top:24px;">Loading…</div>
+</ng-container>
 
-  <form class="form" (ngSubmit)="save()">
-    <mat-form-field appearance="fill">
-      <mat-label>Username</mat-label>
-      <input matInput [(ngModel)]="edit.userId" name="userId" />
-    </mat-form-field>
-
-    <mat-form-field appearance="fill">
-      <mat-label>Email</mat-label>
-      <input matInput type="email" [(ngModel)]="edit.email" name="email" />
-    </mat-form-field>
-
-    <mat-form-field appearance="fill">
-      <mat-label>Birthday</mat-label>
-      <input matInput type="date" [(ngModel)]="edit.birthday" name="birthday" />
-    </mat-form-field>
-
-    <mat-form-field appearance="fill">
-      <mat-label>New password (optional)</mat-label>
-      <input matInput type="password" [(ngModel)]="edit.password" name="password" />
-    </mat-form-field>
-
-    <div class="actions">
-      <button mat-raised-button color="primary" type="submit" [disabled]="saving">Save</button>
-      <button mat-button type="button" (click)="deleteAccount()">Delete account</button>
-    </div>
-  </form>
-
-  <h3>Favorite Movies</h3>
-
-  <ng-container *ngIf="favorites?.length; else none">
-    <section class="favorites-grid">
-      <div class="fav-tile" *ngFor="let m of favorites" [title]="m.title" (click)="openDetails(m)">
-        <img *ngIf="m.ImageUrl; else noimg" [src]="m.ImageUrl" [alt]="m.title" />
-        <ng-template #noimg>
-          <div class="placeholder">No image</div>
-        </ng-template>
-
-        <div class="tile-caption">
-          <div class="tile-title">{{ m.title }}</div>
-          <button
-            mat-icon-button
-            aria-label="Remove from favorites"
-            (click)="$event.stopPropagation(); removeFavorite(m._id)">
-            <mat-icon>delete</mat-icon>
-          </button>
-        </div>
+<ng-template #ready>
+  <!-- HORIZONTAL BANNER -->
+  <mat-card style="max-width:1100px;margin:16px auto;padding:12px;">
+    <div style="
+      display:grid;
+      grid-template-columns: auto auto 250px 250px auto;
+      gap:20px;
+      align-items:end;
+    ">
+      <!-- User ID -->
+      <div>
+        <div style="font-size:12px;opacity:.7;margin-bottom:4px;">User ID</div>
+        <div style="font-weight:600;white-space:nowrap;">{{ user?.userId }}</div>
       </div>
-    </section>
-  </ng-container>
 
-  <ng-template #none>
-    <p class="muted">No favorites yet.</p>
-  </ng-template>
-</mat-card>
+      <!-- Email -->
+      <div>
+        <div style="font-size:12px;opacity:.7;margin-bottom:4px;">Email</div>
+        <div style="font-weight:600;white-space:nowrap;">{{ user?.email }}</div>
+      </div>
+
+      <!-- Birthday -->
+      <div>
+        <div style="font-size:12px;opacity:.7;margin-bottom:4px;">Birthday</div>
+        <input
+          type="date"
+          [(ngModel)]="edit.birthday"
+          style="height:36px;padding:6px 10px;border:1px solid rgba(0,0,0,.2);border-radius:6px;width:100%;"
+        />
+      </div>
+
+      <!-- New password -->
+      <div>
+        <div style="font-size:12px;opacity:.7;margin-bottom:4px;">New Password</div>
+        <input
+          type="password"
+          [(ngModel)]="edit.password"
+          placeholder="••••••"
+          style="height:36px;padding:6px 10px;border:1px solid rgba(0,0,0,.2);border-radius:6px;width:100%;"
+        />
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
+        <button mat-raised-button color="primary" (click)="save()" [disabled]="saving">Update</button>
+        <button mat-stroked-button color="warn" (click)="deleteAccount()">Delete</button>
+      </div>
+    </div>
+  </mat-card>
+
+  <!-- Favorites -->
+  <mat-card style="max-width:960px;margin:16px auto;padding:12px;">
+    <h3 style="margin:0 0 12px;">Favorite Movies</h3>
+    <div *ngIf="!favs.length" style="opacity:.7;">No favorites yet.</div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:12px;">
+      <div
+        *ngFor="let m of favs"
+        style="width:220px;border:1px solid rgba(0,0,0,.12);border-radius:8px;padding:8px;cursor:pointer;"
+        (click)="openFavDetails(m)"
+      >
+        <div style="font-weight:600;margin-bottom:4px;">{{ m?.title ?? m?.Title }}</div>
+        <img
+          [src]="(m?.ImageUrl || m?.imageUrl) || '/imageUrl/' + (m?.ImagePath || m?.imagePath)"
+          alt=""
+          style="width:100%;height:140px;object-fit:cover;display:block;margin-bottom:6px;"
+        />
+        <button mat-button color="warn" (click)="$event.stopPropagation(); removeFavorite(m._id)">Remove</button>
+      </div>
+    </div>
+  </mat-card>
+</ng-template>
+
+
+
+
+
+
+
+

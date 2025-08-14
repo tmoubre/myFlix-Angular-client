@@ -37,3 +37,44 @@ body {
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+::ng-deep .mat-mdc-dialog-container.register-dialog {
+  padding: 16px;
+  border-radius: 12px;
+}
+
+::ng-deep .register-dialog .mat-mdc-dialog-surface {
+  width: 420px;
+  max-width: 95vw;
+}
+/* Keep the pane vertically centered and allow shrinking if needed */
+.cdk-overlay-pane.register-pane {
+  display: flex;
+  align-items: center;       /* vertical centering */
+}
+
+/* Nice rounded surface and internal scrolling for content */
+.register-dialog .mat-mdc-dialog-surface {
+  border-radius: 14px;
+}
+
+/* If you use <mat-dialog-content>, this ensures it scrolls */
+.register-dialog .mat-mdc-dialog-content {
+  max-height: calc(90vh - 32px); /* matches maxHeight with a little padding */
+  overflow: auto;
+  padding-bottom: 8px;
+}
+.cdk-overlay-pane.register-pane {
+  display: flex;
+  align-items: center; /* vertical centering */
+}
+
+.register-dialog .mat-mdc-dialog-surface {
+  border-radius: 14px;
+}
+
+.register-dialog .mat-mdc-dialog-content {
+  max-height: calc(90vh - 32px);
+  overflow: auto;
+  padding-bottom: 8px;
+}

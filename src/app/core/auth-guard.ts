@@ -1,12 +1,12 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import { CanActivateFn, Router, UrlTree } from '@angular/router';
 
-export const canActivateAuth: CanActivateFn = () => {
+export const canActivateAuth: CanActivateFn = (): boolean | UrlTree => {
   const router = inject(Router);
   const token = localStorage.getItem('token');
-  if (!token) { router.navigateByUrl(''); return false; }
-  return true;
+  return token ? true : router.createUrlTree(['/login']);
 };
+
 
 
 

@@ -11,35 +11,29 @@ import { MatButtonModule } from '@angular/material/button';
   imports: [CommonModule, RouterLink, RouterLinkActive, MatToolbarModule, MatButtonModule],
   template: `
     <mat-toolbar color="primary">
-      <span class="brand" routerLink="/movies">myFlix</span>
+      <span class="brand" routerLink="/movies" style="cursor:pointer;">myFlix</span>
       <span class="spacer"></span>
 
       <ng-container *ngIf="loggedIn(); else guest">
-        <button mat-button routerLink="/movies" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Movies</button>
-        <button mat-button routerLink="/profile" routerLinkActive="active">Profile</button>
+        <a mat-button routerLink="/movies" routerLinkActive="active">Movies</a>
+        <a mat-button routerLink="/profile" routerLinkActive="active">Profile</a>
         <button mat-button (click)="logout()">Logout</button>
       </ng-container>
 
       <ng-template #guest>
-        <button mat-button routerLink="/login" routerLinkActive="active">Sign in</button>
-        <button mat-button routerLink="/register" routerLinkActive="active">Create account</button>
+        <a mat-button routerLink="/login">Login</a>
+        <a mat-button routerLink="/register">Sign Up</a>
       </ng-template>
     </mat-toolbar>
   `,
-  styleUrls: ['./navigation-bar.component.scss']
+  styles: [`.spacer{flex:1 1 auto}`]
 })
 export class NavigationBarComponent {
   constructor(private router: Router) {}
-
-  loggedIn(): boolean {
-    try { return !!localStorage.getItem('token'); } catch { return false; }
-  }
-
+  loggedIn(): boolean { try { return !!localStorage.getItem('token'); } catch { return false; } }
   logout(): void {
-    try {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-    } catch {}
+    try { localStorage.removeItem('token'); localStorage.removeItem('user'); } catch {}
     this.router.navigateByUrl('/login');
   }
 }
+

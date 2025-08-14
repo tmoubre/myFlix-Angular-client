@@ -1,29 +1,41 @@
-<mat-card class="movie-card" (click)="onCardClick()">
-  <div class="poster-wrap">
-    <img *ngIf="image; else noimg" [src]="image" [alt]="title" />
-    <ng-template #noimg>
-      <div class="placeholder">No image</div>
-    </ng-template>
+<mat-card class="movie-card">
+  <mat-card-header class="card-header">
+    <mat-card-title>{{ title }}</mat-card-title>
+    <mat-card-subtitle>Directed by: {{ directorName }}</mat-card-subtitle>
+  </mat-card-header>
+
+  <!-- Poster with fixed aspect ratio (prevents overflow) -->
+  <div class="poster-wrap" (click)="view.emit()">
+    <img
+      class="poster"
+      [src]="poster"
+      [alt]="title"
+      (error)="onImgError($event)"
+    />
   </div>
 
-  <mat-card-title>{{ title }}</mat-card-title>
-  <mat-card-content>
-    <p class="desc">{{ description }}</p>
-  </mat-card-content>
-
-  <!-- Heart anchored to the bottom-right of the CARD -->
-  <button
-    mat-icon-button
-    class="fav-btn"
-    [class.is-fav]="favorite"
-    [attr.aria-pressed]="favorite"
-    aria-label="Toggle favorite"
-    (click)="onHeartClick($event)">
-    <mat-icon [style.color]="favorite ? '#e53935' : 'rgba(0,0,0,0.6)'">
-      {{ favorite ? 'favorite' : 'favorite_border' }}
-    </mat-icon>
-  </button>
+  <mat-card-actions class="actions">
+    <div class="left-btns">
+      <button mat-button color="primary" (click)="genre.emit()">Genre</button>
+      <button mat-button color="primary" (click)="director.emit()">Director</button>
+      <button mat-button color="primary" (click)="view.emit()">Synopsis</button>
+    </div>
+    <button
+      mat-icon-button
+      class="fav-btn"
+      [color]="favorite ? 'warn' : undefined"
+      [attr.aria-pressed]="favorite"
+      (click)="toggle.emit()"
+      aria-label="Toggle favorite"
+    >
+      <mat-icon>{{ favorite ? 'favorite' : 'favorite_border' }}</mat-icon>
+    </button>
+  </mat-card-actions>
 </mat-card>
+
+
+
+
 
 
 
