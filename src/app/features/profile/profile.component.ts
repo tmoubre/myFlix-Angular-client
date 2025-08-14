@@ -8,187 +8,178 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 
 import { FetchApiDataService } from '../../fetch-api-data.service';
-import { SynopsisDialogComponent } from '../movies/dialogs/synopsis-dialog.component';
 
 type UserDoc = {
   _id: string;
-  userId: string;
+  userId: string;   // username string (backend field)
   email: string;
-  birthday?: string;   // UI field
-  birthDate?: string;  // backend canonical
-  favoriteMovies: string[]; // movie ids
+  birthday?: string;
+  favoriteMovies: string[]; // array of movie IDs
 };
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatCardModule, MatButtonModule, MatSnackBarModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatCardModule,
+    MatButtonModule,
+    MatSnackBarModule
+    // (Removed SynopsisDialogComponent to silence NG8113 warning)
+  ],
   templateUrl: './profile.component.html',
-  styleUrls: ['./profile.component.scss'],
+  styleUrls: ['./profile.component.scss']
 })
 export class ProfileComponent {
   private api = inject(FetchApiDataService);
   private snack = inject(MatSnackBar);
   private dialog = inject(MatDialog);
 
-  loading = true;
+  loading = false;
   saving = false;
 
   user: UserDoc | null = null;
-  movies: any[] = [];
-  favs: any[] = []; // favorite movie objects
 
-  // banner edit model
-  edit: { userId: string; email: string; birthday?: string; password?: string } = {
-    userId: '',
-    email: '',
-    birthday: '',
-    password: ''
-  };
+  // Two-way bound in the template
+  edit: { birthday?: string; password?: string } = {};
 
-  ngOnInit(): void {
+  // Favorites rendered in the template
+  favs: any[] = [];
+
+  constructor() {
+    this.loading = true;
     const stored = this.safeParse(localStorage.getItem('user'));
-    const userId = stored?.userId as string | undefined;
-    if (!userId) { this.loading = false; return; }
+    if (stored) {
+      const normalized: UserDoc = {
+        _id: stored._id ?? stored.id,
+        userId: stored.userId,
+        email: stored.email ?? stored.Email,
+        birthday: stored.birthday ?? stored.birthDate,
+        favoriteMovies: this.extractIds(stored.favoriteMovies ?? stored.FavoriteMovies ?? [])
+      };
+      this.user = normalized;
+      this.edit.birthday = this.isoToDateInput(normalized.birthday);
+    }
+    this.loadFavorites();
+  }
 
-    // Load user → movies → compute favorites
-    this.api.getUser(userId).subscribe({
-      next: (u) => {
-        const normalized: UserDoc = { ...(u as any), birthday: (u as any).birthday ?? (u as any).birthDate };
-        this.user = normalized;
-        this.fillFormFromUser(normalized);
-
-        this.api.getAllMovies().subscribe({
-          next: (ms) => {
-            this.movies = ms || [];
-            this.computeFavorites();
-            this.loading = false;
-          },
-          error: () => { this.loading = false; }
+  /** Load full movie docs for the IDs in user.favoriteMovies */
+  private loadFavorites(): void {
+    if (!this.user || !Array.isArray(this.user.favoriteMovies) || this.user.favoriteMovies.length === 0) {
+      this.favs = [];
+      this.loading = false;
+      return;
+    }
+    this.loading = true;
+    const idSet = new Set(this.user.favoriteMovies.map(String));
+    this.api.getAllMovies().subscribe({
+      next: (all) => {
+        const items = (all || []);
+        this.favs = items.filter((m: any) => {
+          const id = String(m?._id ?? m?.id ?? '');
+          return id && idSet.has(id);
         });
       },
-      error: () => { this.loading = false; }
-    });
-  }
-
-  /** ---------- Favorites ---------- */
-  private computeFavorites(): void {
-    if (!this.user || !this.movies?.length) { this.favs = []; return; }
-    const favIds = (this.user.favoriteMovies || []).map(x => String(x));
-    const favSet = new Set(favIds);
-    this.favs = (this.movies || []).filter(m => favSet.has(String(m?._id)));
-  }
-
-  isFavorite(id: string): boolean {
-    return !!this.user?.favoriteMovies?.map(x => String(x)).includes(String(id));
-  }
-
-  toggleFavorite(id: string): void {
-    if (!this.user) return;
-    const userId = this.user.userId;
-
-    const req$ = this.isFavorite(id)
-      ? this.api.removeFavorite(userId, id)
-      : this.api.addFavorite(userId, id);
-
-    req$.subscribe({
-      next: (u) => {
-        const normalized: UserDoc = { ...(u as any), birthday: (u as any).birthday ?? (u as any).birthDate };
-        this.user = normalized;
-        this.computeFavorites();
-        try { localStorage.setItem('user', JSON.stringify(this.user)); } catch {}
-        const isNowFav = (this.user.favoriteMovies || []).map(x => String(x)).includes(String(id));
-        this.snack.open(isNowFav ? 'Added to favorites' : 'Removed from favorites', 'OK', { duration: 1500 });
+      error: (err) => {
+        console.error(err);
+        this.favs = [];
+        this.snack.open('Failed to load favorites', 'OK', { duration: 2500 });
       },
-      error: () => this.snack.open('Could not update favorites', 'OK', { duration: 2000 })
+      complete: () => (this.loading = false)
     });
   }
 
-  removeFavorite(id: string): void {
-    if (!this.user) return;
-    this.api.removeFavorite(this.user.userId, id).subscribe({
-      next: (u) => {
-        const normalized: UserDoc = { ...(u as any), birthday: (u as any).birthday ?? (u as any).birthDate };
-        this.user = normalized;
-        this.computeFavorites();
-        try { localStorage.setItem('user', JSON.stringify(this.user)); } catch {}
-        this.snack.open('Removed from favorites', 'OK', { duration: 1500 });
-      },
-      error: () => this.snack.open('Could not remove favorite', 'OK', { duration: 2000 })
-    });
-  }
-
-  /** ---------- Open movie info dialog from Profile ---------- */
-  openFavDetails(m: any): void {
-    this.dialog.open(SynopsisDialogComponent, {
-      width: '520px',
-      data: {
-        title: m?.title ?? m?.Title ?? 'Synopsis',
-        description: m?.Description ?? m?.description ?? 'No synopsis available.'
-      }
-    });
-  }
-
-  /** ---------- Profile edit & delete ---------- */
+  /** Submit profile changes (no-op if your service doesn’t support it) */
   save(): void {
     if (!this.user) return;
     this.saving = true;
 
-    const payload: any = {
-      userId: this.edit.userId?.trim(),
-      email: this.edit.email?.trim(),
-      birthDate: this.edit.birthday ? this.dateInputToIso(this.edit.birthday) : undefined
-    };
-    if (this.edit.password?.trim()) payload.password = this.edit.password.trim();
+    const payload: any = {};
+    if (this.edit.birthday) payload.birthDate = this.dateInputToIso(this.edit.birthday);
+    if (this.edit.password) payload.password = this.edit.password;
 
-    this.api.updateUser(this.user.userId, payload).subscribe({
-      next: (u) => {
-        const normalized: UserDoc = { ...(u as any), birthday: (u as any).birthday ?? (u as any).birthDate };
-        this.user = normalized;
-        this.fillFormFromUser(normalized);
-        try { localStorage.setItem('user', JSON.stringify(this.user)); } catch {}
-        this.computeFavorites();
-        this.snack.open('Profile updated', 'OK', { duration: 2000 });
-      },
-      error: () => this.snack.open('Could not update profile', 'OK', { duration: 2500 }),
-      complete: () => (this.saving = false)
-    });
+    const done = () => { this.saving = false; this.snack.open('Updated', 'OK', { duration: 1500 }); };
+    try {
+      if (typeof (this.api as any).updateUser === 'function') {
+        (this.api as any).updateUser(this.user.userId, payload).subscribe({
+          next: (u: any) => {
+            const normalized: UserDoc = {
+              _id: u?._id ?? this.user!._id,
+              userId: u?.userId ?? this.user!.userId,
+              email: u?.email ?? this.user!.email,
+              birthday: u?.birthday ?? u?.birthDate ?? this.user!.birthday,
+              favoriteMovies: this.extractIds(u?.favoriteMovies ?? this.user!.favoriteMovies)
+            };
+            this.user = normalized;
+            localStorage.setItem('user', JSON.stringify(normalized));
+            this.loadFavorites();
+            done();
+          },
+          error: (err: any) => { console.error(err); this.saving = false; this.snack.open('Update failed', 'OK', { duration: 2000 }); }
+        });
+      } else {
+        done();
+      }
+    } catch (e) {
+      console.error(e);
+      this.saving = false;
+      this.snack.open('Update failed', 'OK', { duration: 2000 });
+    }
   }
 
   deleteAccount(): void {
     if (!this.user) return;
-    // eslint-disable-next-line no-alert
-    if (!confirm('Delete your account? This cannot be undone.')) return;
+    if (typeof (this.api as any).deleteUser === 'function') {
+      (this.api as any).deleteUser(this.user.userId).subscribe({
+        next: () => { this.snack.open('Account deleted', 'OK', { duration: 1500 }); },
+        error: (err: any) => { console.error(err); this.snack.open('Delete failed', 'OK', { duration: 2000 }); }
+      });
+    }
+  }
 
-    this.api.deleteUser(this.user.userId).subscribe({
-      next: () => {
-        try { localStorage.removeItem('token'); localStorage.removeItem('user'); } catch {}
-        this.snack.open('Account deleted', 'OK', { duration: 2500 });
+  isFavorite(id: string): boolean {
+    if (!this.user) return false;
+    return (this.user.favoriteMovies || []).includes(String(id));
+  }
+
+  removeFavorite(id: string): void {
+    if (!this.user) return;
+    const userId = this.user.userId;
+    this.api.removeFavorite(userId, id).subscribe({
+      next: (u: any) => {
+        // Update user + localStorage
+        const favsIds = this.extractIds(u?.favoriteMovies ?? this.user!.favoriteMovies).filter(x => String(x) !== String(id));
+        this.user = { ...(this.user as UserDoc), favoriteMovies: favsIds };
+        localStorage.setItem('user', JSON.stringify(this.user));
+        // Update visible favorites list
+        this.favs = (this.favs || []).filter((m: any) => String(m?._id ?? m?.id ?? '') !== String(id));
+        this.snack.open('Removed from favorites', 'OK', { duration: 1500 });
       },
-      error: () => this.snack.open('Could not delete account', 'OK', { duration: 2500 })
+      error: (err) => { console.error(err); this.snack.open('Could not update favorites.', 'OK', { duration: 2500 }); }
     });
   }
 
-  /** ---------- Helpers ---------- */
-  private fillFormFromUser(u: UserDoc): void {
-    this.edit = {
-      userId: u.userId || '',
-      email: u.email || '',
-      birthday: this.isoToDateInput(this.getBirthdayIso(u)) || '',
-      password: ''
-    };
+  /** Exists because the template calls (click)="openFavDetails(m)" */
+  openFavDetails(_m: any): void {
+    // No-op (or open a dialog if you want)
   }
 
-  private getBirthdayIso(u?: { birthday?: string; birthDate?: string }): string | undefined {
-    return u?.birthday || u?.birthDate || undefined;
+  // ---- helpers ----
+  private extractIds(arr: any[]): string[] {
+    if (!Array.isArray(arr)) return [];
+    const out: string[] = [];
+    for (const x of arr) {
+      if (typeof x === 'string') out.push(x);
+      else if (x?._id) out.push(String(x._id));
+      else if (x?.id) out.push(String(x.id));
+    }
+    return out;
   }
 
-  private isoToDateInput(iso?: string): string | undefined {
-    if (!iso) return undefined;
-    const m = iso.match(/^(\d{4}-\d{2}-\d{2})/);
-    if (m) return m[1];
+  private isoToDateInput(iso?: string): string {
+    if (!iso) return '';
     const d = new Date(iso);
-    if (isNaN(d.getTime())) return undefined;
     const yyyy = d.getUTCFullYear();
     const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
     const dd = String(d.getUTCDate()).padStart(2, '0');

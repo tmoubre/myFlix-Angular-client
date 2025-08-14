@@ -8,15 +8,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { Subject, takeUntil } from 'rxjs';
 
-// ⬇️ Use the path that matches your project layout.
-// If your service is at src/app/fetch-api-data.service.ts (most common):
 import { FetchApiDataService } from '../../../fetch-api-data.service';
-// If yours actually lives under src/app/features/, change the line above to:
-// import { FetchApiDataService } from '../../fetch-api-data.service';
-
+import { Movie } from '../../../models/movie.models';
 import { MovieCardComponent } from '../movie-card/movie-card.component';
-
-type Movie = any;
 
 @Component({
   selector: 'app-movie-list',
@@ -36,18 +30,18 @@ type Movie = any;
 })
 export class MovieListComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
-
-  // Explicitly type the injected service to avoid "unknown" errors if the import path is wrong.
-  private api: FetchApiDataService = inject(FetchApiDataService);
+  private api = inject(FetchApiDataService);
   private snack = inject(MatSnackBar);
   private dialog = inject(MatDialog);
 
   loading = false;
   movies: Movie[] = [];
   favoriteIds = new Set<string>();
+
+  /** Username string stored by your backend in the `userId` field (NOT Mongo `_id`). */
   userId: string | null = null;
 
-  // Dialog templates defined in the HTML
+  // Dialog templates defined in the HTML (if present)
   @ViewChild('synopsisTpl') synopsisTpl!: TemplateRef<any>;
   @ViewChild('genreTpl')    genreTpl!: TemplateRef<any>;
   @ViewChild('directorTpl') directorTpl!: TemplateRef<any>;
@@ -55,29 +49,28 @@ export class MovieListComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loading = true;
 
+    // Pull logged-in user from localStorage and grab username under `userId`
     const stored = this.safeParse(localStorage.getItem('user'));
-    this.userId =
-      stored?.userId ?? stored?.Username ?? stored?.username ?? stored?._id ?? null;
+    this.userId = stored?.userId ?? null;
 
-    const favList = stored?.favoriteMovies ?? stored?.FavoriteMovies ?? stored?.favorites ?? [];
+    // Seed favorites from stored user
+    const favList = stored?.favoriteMovies ?? stored?.FavoriteMovies ?? [];
     for (const f of Array.isArray(favList) ? favList : []) {
       if (typeof f === 'string') this.favoriteIds.add(f);
       else if (f?._id) this.favoriteIds.add(String(f._id));
       else if (f?.id) this.favoriteIds.add(String(f.id));
     }
 
+    // Fetch movies and stop the spinner
     this.api.getAllMovies()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (list: Movie[]) => {
-          this.movies = Array.isArray(list) ? list : [];
-          this.loading = false;
-        },
-        error: (err: any) => {
-          this.loading = false;
+        next: (movies) => { this.movies = movies || []; },
+        error: (err) => {
           console.error(err);
-          this.snack.open('Could not load movies.', 'OK', { duration: 3000 });
-        }
+          this.snack.open('Failed to load movies', 'OK', { duration: 2500 });
+        },
+        complete: () => { this.loading = false; }
       });
   }
 
@@ -86,22 +79,29 @@ export class MovieListComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  /** Smooth horizontal scroll */
-  scroll(container: HTMLElement, dir: 1 | -1): void {
-    const amount = container.clientWidth * 0.9 * dir;
-    container.scrollBy({ left: amount, behavior: 'smooth' });
+  /** Horizontal scroll controls used by the template */
+  scroll(container: HTMLElement, dir: number): void {
+    if (!container) return;
+    try {
+      container.scrollBy({ left: dir * 320, behavior: 'smooth' } as ScrollToOptions);
+    } catch {
+      container.scrollLeft += dir * 320;
+    }
   }
 
-  /** Favorites */
-  isFavorite(m: Movie): boolean {
-    const id = m?._id ?? m?.id;
-    return id ? this.favoriteIds.has(String(id)) : false;
+  /** Template helper: is a movie (or id) currently favorited? */
+  isFavorite(m: Movie | string | undefined | null): boolean {
+    const id = this.extractId(m);
+    return id ? this.favoriteIds.has(id) : false;
   }
 
-  toggleFavorite(m: Movie): void {
-    const id = String(m?._id ?? m?.id ?? '');
-    if (!id || !this.userId) {
-      this.snack.open('Unable to update favorites.', 'OK', { duration: 2000 });
+  /** Toggle heart; template may pass Movie or id */
+  toggleFavorite(m: Movie | string): void {
+    const id = this.extractId(m);
+    if (!id) return;
+
+    if (!this.userId) {
+      this.snack.open('Please log in again.', 'OK', { duration: 2000 });
       return;
     }
 
@@ -121,6 +121,14 @@ export class MovieListComponent implements OnInit, OnDestroy {
             this.favoriteIds.add(id);
             this.snack.open('Added to favorites', 'OK', { duration: 1500 });
           }
+
+          // Keep localStorage.user.favoriteMovies in sync so Profile reflects changes immediately
+          const stored = this.safeParse(localStorage.getItem('user')) || {};
+          const current = this.extractIds(stored.favoriteMovies ?? stored.FavoriteMovies ?? []);
+          const set = new Set(current.map(String));
+          if (isFav) set.delete(String(id)); else set.add(String(id));
+          (stored as any).favoriteMovies = Array.from(set);
+          localStorage.setItem('user', JSON.stringify(stored));
         },
         error: (err: any) => {
           console.error(err);
@@ -129,45 +137,59 @@ export class MovieListComponent implements OnInit, OnDestroy {
       });
   }
 
-  /** Modals (no extra files needed) */
+  /** Dialog helpers referenced by template; safe no-ops if templates not used */
   openDetails(m: Movie): void {
-    const title = m?.Title ?? m?.title ?? 'Synopsis';
-    const body =
-      m?.Description ?? m?.description ?? m?.Summary ?? m?.summary ?? 'No synopsis available.';
+    if (!this.synopsisTpl) return;
+    const title = (m as any)?.Title ?? (m as any)?.title ?? 'Details';
+    const synopsis = (m as any)?.Description ?? (m as any)?.description ?? 'No synopsis available.';
     this.dialog.open(this.synopsisTpl, {
-      data: { title, body },
+      data: { title, body: synopsis },
       width: 'min(92vw, 560px)'
     });
   }
 
   openGenre(m: Movie): void {
-    const name = m?.Genre?.Name ?? m?.genre?.name ?? 'Genre';
-    const desc = m?.Genre?.Description ?? m?.genre?.description ?? 'No description available.';
+    if (!this.genreTpl) return;
+    const name = (m as any)?.Genre?.Name ?? (m as any)?.genre?.name ?? 'Genre';
+    const description = (m as any)?.Genre?.Description ?? (m as any)?.genre?.description ?? '';
+    const body = [description].filter(Boolean).join('\n\n') || 'No details available.';
     this.dialog.open(this.genreTpl, {
-      data: { title: name, body: desc },
-      width: 'min(92vw, 520px)'
+      data: { title: name, body },
+      width: 'min(92vw, 560px)'
     });
   }
 
   openDirector(m: Movie): void {
-    const name  = m?.Director?.Name ?? m?.director?.name ?? 'Director';
-    const bio   = m?.Director?.Bio ?? m?.director?.bio ?? '';
-    const birth = m?.Director?.Birth ?? m?.director?.birth;
-    const death = m?.Director?.Death ?? m?.director?.death;
-
-    const lines = [
-      bio && String(bio),
-      birth ? `Born: ${birth}` : '',
-      death ? `Died: ${death}` : ''
-    ].filter(Boolean);
-
+    if (!this.directorTpl) return;
+    const name = (m as any)?.Director?.Name ?? (m as any)?.director?.name ?? 'Director';
+    const bio = (m as any)?.Director?.Bio ?? (m as any)?.director?.bio;
+    const birth = (m as any)?.Director?.Birth ?? (m as any)?.director?.birth;
+    const death = (m as any)?.Director?.Death ?? (m as any)?.director?.death;
+    const lines = [bio && `Bio: ${bio}`, birth && `Born: ${birth}`, death && `Died: ${death}`].filter(Boolean);
     this.dialog.open(this.directorTpl, {
       data: { title: name, body: lines.join('\n\n') || 'No details available.' },
       width: 'min(92vw, 560px)'
     });
   }
 
-  trackById = (_: number, m: Movie) => m?._id ?? m?.id ?? _;
+  trackById = (_: number, m: Movie) => (m as any)?._id ?? (m as any)?.id ?? _;
+
+  private extractId(m: Movie | string | null | undefined): string | null {
+    if (!m) return null;
+    if (typeof m === 'string') return m;
+    return (m as any)?._id ?? (m as any)?.id ?? null;
+  }
+
+  private extractIds(arr: any[]): string[] {
+    if (!Array.isArray(arr)) return [];
+    const out: string[] = [];
+    for (const x of arr) {
+      if (typeof x === 'string') out.push(x);
+      else if (x?._id) out.push(String(x._id));
+      else if (x?.id) out.push(String(x.id));
+    }
+    return out;
+  }
 
   private safeParse(json: string | null): any {
     try { return json ? JSON.parse(json) : null; } catch { return null; }

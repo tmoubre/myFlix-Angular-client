@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -14,16 +14,15 @@ import { FetchApiDataService } from '../../fetch-api-data.service';
 function getApiErrorMessage(err: any): string {
   try {
     const e = err?.error ?? err;
-    if (!e) return '';
     if (typeof e === 'string') return e;
-    if (typeof e?.message === 'string') return e.message;
-    if (Array.isArray(e?.errors) && e.errors.length) {
-      return e.errors.map((x: any) => x?.msg || x).join(', ');
+    if (e?.message) return e.message;
+    if (e?.errors && typeof e.errors === 'object') {
+      const first = Object.values(e.errors)[0] as any;
+      return first?.message || 'Request failed';
     }
-    return '';
-  } catch {
-    return '';
-  }
+    if (err instanceof HttpErrorResponse && err.statusText) return err.statusText;
+  } catch {}
+  return 'Something went wrong';
 }
 
 @Component({
@@ -39,15 +38,16 @@ function getApiErrorMessage(err: any): string {
     MatSnackBarModule,
     MatDialogModule
   ],
-  templateUrl: './register.component.html'
+  templateUrl: './register.component.html',
+  // styleUrls: ['./register.component.scss'] // uncomment if the file exists
 })
 export class RegisterComponent {
   private fb = inject(FormBuilder);
   private api = inject(FetchApiDataService);
   private snack = inject(MatSnackBar);
   private router = inject(Router);
-  // If the component is shown in a dialog, this will exist; otherwise undefined (fine).
-  dialogRef = inject(MatDialogRef<RegisterComponent>, { optional: true });
+
+  constructor(@Optional() private dialogRef?: MatDialogRef<RegisterComponent>) {}
 
   loading = false;
 
@@ -55,48 +55,44 @@ export class RegisterComponent {
     userId: ['', [Validators.required, Validators.minLength(3)]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]],
-    birthday: [''] // optional
+    birthDate: [''] // optional
   });
 
-  get f() { return this.form.controls; }
+  /** Getter used by template: f.userId, f.email, f.password */
+  get f() {
+    return this.form.controls;
+  }
 
   submit(): void {
-    if (this.form.invalid || this.loading) return;
+    if (this.form.invalid) return;
+
+    const payload = {
+      userId: this.form.value.userId!,
+      password: this.form.value.password!,
+      email: this.form.value.email!,
+      birthDate: this.form.value.birthDate || undefined
+    };
+
     this.loading = true;
-
-    const { userId, email, password, birthday } = this.form.value;
-
-    this.api.registerUser({
-      userId: String(userId ?? ''),
-      email: String(email ?? ''),
-      password: String(password ?? ''),
-      birthDate: birthday ? String(birthday) : undefined
-    }).subscribe({
+    this.api.registerUser(payload).subscribe({
       next: () => {
-        this.loading = false;
-        this.snack.open('Account created! Please sign in.', 'OK', { duration: 2500 });
+        this.snack.open('Account created! Please log in.', 'OK', { duration: 2000 });
+        this.router.navigate(['/login']); // adjust route if your login page differs
         this.dialogRef?.close(true);
-        this.router.navigate(['/login']);
       },
-      error: (err: HttpErrorResponse) => {
-        this.loading = false;
-
-        const apiMsg = getApiErrorMessage(err);
-        const isDuplicate = err.status === 409 || /exist|already|duplicate/i.test(apiMsg);
-
-        const msg = isDuplicate
-          ? 'Could not create account: user already exists.'
-          : (apiMsg || 'Could not create account. Please try again.');
-
-        this.snack.open(msg, 'OK', { duration: 3500 });
+      error: (err) => {
+        const msg = getApiErrorMessage(err);
+        this.snack.open(msg || 'Registration failed', 'OK', { duration: 3000 });
         console.error(err);
-      }
+        this.loading = false;
+      },
+      complete: () => (this.loading = false)
     });
   }
 
+  /** Used by template: (click)="goToLogin()" */
   goToLogin(): void {
     this.router.navigate(['/login']);
     this.dialogRef?.close();
   }
 }
-
