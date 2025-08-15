@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/core/auth-guard.ts
+ * @file
+ */
 import { inject } from '@angular/core';
 import { CanActivateFn, Router, UrlTree } from '@angular/router';
 

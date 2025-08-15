@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/fetch-api-data.service.ts
+ * @file
+ */
 // src/app/fetch-api-data.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -34,7 +38,10 @@ export interface RegisterPayload {
 }
 
 @Injectable({ providedIn: 'root' })
-export class FetchApiDataService {
+export /**
+ * FetchApiDataService: myFlix Angular component/service/model.
+ */
+class FetchApiDataService {
   constructor(private http: HttpClient) {}
 
   private get ls(): Storage | null { try { return typeof localStorage !== 'undefined' ? localStorage : null; } catch { return null; } }

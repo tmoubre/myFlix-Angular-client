@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/features/movies/movie-list/movie-list.component.ts
+ * @file
+ */
 import { Component, OnInit, OnDestroy, inject, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
@@ -28,7 +32,10 @@ import { MovieCardComponent } from '../movie-card/movie-card.component';
   templateUrl: './movie-list.component.html',
   styleUrls: ['./movie-list.component.scss']
 })
-export class MovieListComponent implements OnInit, OnDestroy {
+export /**
+ * MovieListComponent: myFlix Angular component/service/model.
+ */
+class MovieListComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private api = inject(FetchApiDataService);
   private snack = inject(MatSnackBar);

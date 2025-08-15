@@ -6,8 +6,10 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
+import { MatDialogModule } from '@angular/material/dialog';
 
 import { FetchApiDataService } from '../../fetch-api-data.service';
+import { MovieDetailsDialog } from '../movies/movie-list/movie-details.dialog';
 
 type UserDoc = {
   _id: string;
@@ -27,7 +29,8 @@ type UserDoc = {
     MatButtonModule,
     MatSnackBarModule
     // (Removed SynopsisDialogComponent to silence NG8113 warning)
-  ],
+  ,
+    MatDialogModule],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss']
 })
@@ -160,10 +163,25 @@ export class ProfileComponent {
     });
   }
 
-  /** Exists because the template calls (click)="openFavDetails(m)" */
-  openFavDetails(_m: any): void {
-    // No-op (or open a dialog if you want)
+  
+  /** Open a modal with details for a favorite movie (title, director, genre). */
+  openFavDetails(m: any): void {
+    if (!m) return;
+    const data = {
+      title: m?.title ?? m?.Title ?? 'Movie',
+      description: m?.description ?? m?.Description ?? '',
+      genreName: m?.genre?.name ?? m?.Genre?.Name ?? '',
+      directorName: m?.director?.name ?? m?.Director?.Name ?? '',
+      image: (m?.ImageUrl || m?.imageUrl) || (m?.ImagePath || m?.imagePath ? ('/imageUrl/' + (m?.ImagePath || m?.imagePath)) : null),
+      favorite: true
+    };
+    this.dialog.open(MovieDetailsDialog, {
+      data,
+      width: '520px',
+      maxWidth: '95vw'
+    });
   }
+
 
   // ---- helpers ----
   private extractIds(arr: any[]): string[] {

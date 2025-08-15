@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/features/movies/dialogs/synopsis-dialog.component.ts
+ * @file
+ */
 import { Component, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -17,7 +21,10 @@ import { MatButtonModule } from '@angular/material/button';
     </mat-dialog-actions>
   `
 })
-export class SynopsisDialogComponent {
+export /**
+ * SynopsisDialogComponent: myFlix Angular component/service/model.
+ */
+class SynopsisDialogComponent {
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: any,
     private ref: MatDialogRef<SynopsisDialogComponent>

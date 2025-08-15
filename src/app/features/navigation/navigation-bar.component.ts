@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/features/navigation/navigation-bar.component.ts
+ * @file
+ */
 // src/app/features/navigation/navigation-bar.component.ts
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -28,7 +32,10 @@ import { MatButtonModule } from '@angular/material/button';
   `,
   styles: [`.spacer{flex:1 1 auto}`]
 })
-export class NavigationBarComponent {
+export /**
+ * NavigationBarComponent: myFlix Angular component/service/model.
+ */
+class NavigationBarComponent {
   constructor(private router: Router) {}
   loggedIn(): boolean { try { return !!localStorage.getItem('token'); } catch { return false; } }
   logout(): void {

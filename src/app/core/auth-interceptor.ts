@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/core/auth-interceptor.ts
+ * @file
+ */
 import { HttpInterceptorFn } from '@angular/common/http';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {

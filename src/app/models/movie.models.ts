@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/models/movie.models.ts
+ * @file
+ */
 // src/app/models/movie.models.ts
 export interface Genre { name: string; description?: string; }
 export interface Director { name: string; bio?: string; birth?: string; death?: string; }

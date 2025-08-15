@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/features/welcome/welcome.ts
+ * @file
+ */
 // src/app/features/welcome/welcome.ts
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -14,7 +18,10 @@ import { LoginDialogComponent } from '../login-dialog/login-dialog';
   templateUrl: './welcome.html',   // ✅ correct template
   styleUrls: ['./welcome.scss']
 })
-export class WelcomeComponent {
+export /**
+ * WelcomeComponent: myFlix Angular component/service/model.
+ */
+class WelcomeComponent {
   constructor(private dialog: MatDialog) {}
   openLogin(): void {
     this.dialog.open(LoginDialogComponent);

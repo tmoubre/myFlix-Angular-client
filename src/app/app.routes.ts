@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/app.routes.ts
+ * @file
+ */
 // src/app/app.routes.ts
 import { Routes } from '@angular/router';
 import { canActivateAuth } from './core/auth-guard';

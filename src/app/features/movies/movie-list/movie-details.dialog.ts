@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/features/movies/movie-list/movie-details.dialog.ts
+ * @file
+ */
 import { Component, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -42,7 +46,10 @@ import { MatIconModule } from '@angular/material/icon';
     .description { white-space:pre-wrap; margin:6px 0 0; }
   `]
 })
-export class MovieDetailsDialog {
+export /**
+ * MovieDetailsDialog: myFlix Angular component/service/model.
+ */
+class MovieDetailsDialog {
   fav = false;
 
   constructor(
