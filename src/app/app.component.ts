@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/app.component.ts
+ * @packageDocumentation
+ */
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
@@ -10,5 +14,10 @@ import { NavigationBarComponent } from './features/navigation/navigation-bar.com
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent {}
+export /**
+ * AppComponent: myFlix Angular component/service/model.
+ */
+class AppComponent {}
+
+
 

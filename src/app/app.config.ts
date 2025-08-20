@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/app.config.ts
+ * @packageDocumentation
+ */
 // src/app/app.config.ts
 import { ApplicationConfig } from '@angular/core';
 import { provideRouter } from '@angular/router';
@@ -13,6 +17,8 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([authInterceptor])),
   ],
 };
+
+
 
 
 

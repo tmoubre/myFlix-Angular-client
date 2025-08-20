@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/features/profile/profile.component.ts
+ * @packageDocumentation
+ */
 // src/app/features/profile/profile.component.ts
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -8,8 +12,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 
 import { FetchApiDataService } from '../../fetch-api-data.service';
-
-type UserDoc = {
+/** User document shape displayed on Profile. */
+export type UserDoc = {
   _id: string;
   userId: string;   // username string (backend field)
   email: string;
@@ -31,7 +35,10 @@ type UserDoc = {
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss']
 })
-export class ProfileComponent {
+export /**
+ * ProfileComponent: myFlix Angular component/service/model.
+ */
+class ProfileComponent {
   private api = inject(FetchApiDataService);
   private snack = inject(MatSnackBar);
   private dialog = inject(MatDialog);
@@ -56,6 +63,7 @@ export class ProfileComponent {
         userId: stored.userId,
         email: stored.email ?? stored.Email,
         birthday: stored.birthday ?? stored.birthDate,
+  /** Normalize various favorite movie id shapes (string or object) into string ids. */
         favoriteMovies: this.extractIds(stored.favoriteMovies ?? stored.FavoriteMovies ?? [])
       };
       this.user = normalized;
@@ -91,6 +99,7 @@ export class ProfileComponent {
   }
 
   /** Submit profile changes (no-op if your service doesn’t support it) */
+  /** Persist profile changes via API and sync localStorage. */
   save(): void {
     if (!this.user) return;
     this.saving = true;
@@ -128,6 +137,7 @@ export class ProfileComponent {
     }
   }
 
+  /** Delete the current user account after confirmation. */
   deleteAccount(): void {
     if (!this.user) return;
     if (typeof (this.api as any).deleteUser === 'function') {

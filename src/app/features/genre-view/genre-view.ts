@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/features/genre-view/genre-view.ts
+ * @packageDocumentation
+ */
 import { Component } from '@angular/core';
 
 @Component({
@@ -6,6 +10,11 @@ import { Component } from '@angular/core';
   templateUrl: './genre-view.html',
   styleUrl: './genre-view.scss'
 })
-export class GenreView {
+export /**
+ * GenreView: myFlix Angular component/service/model.
+ */
+class GenreView {
 
 }
+
+

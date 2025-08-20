@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/models/user.model.ts
+ * @packageDocumentation
+ */
 export interface User {
   id: string;
   username: string;
@@ -5,3 +9,5 @@ export interface User {
   birthDate?: string;
   favoriteMovies: string[]; // array of Movie IDs
 }
+
+

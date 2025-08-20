@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/features/registration-dialog/registration-dialog.ts
+ * @packageDocumentation
+ */
 import { Component } from '@angular/core';
 
 @Component({
@@ -6,6 +10,11 @@ import { Component } from '@angular/core';
   templateUrl: './registration-dialog.html',
   styleUrl: './registration-dialog.scss'
 })
-export class RegistrationDialog {
+export /**
+ * RegistrationDialog: myFlix Angular component/service/model.
+ */
+class RegistrationDialog {
 
 }
+
+

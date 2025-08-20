@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/core/auth-interceptor.ts
+ * @packageDocumentation
+ */
 import { HttpInterceptorFn } from '@angular/common/http';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
@@ -5,6 +9,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   if (token) req = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
   return next(req);
 };
+
+
 
 
 

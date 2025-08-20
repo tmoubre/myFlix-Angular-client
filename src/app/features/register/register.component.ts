@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/features/register/register.component.ts
+ * @packageDocumentation
+ */
 import { Component, inject, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -41,7 +45,10 @@ function getApiErrorMessage(err: any): string {
   templateUrl: './register.component.html',
   // styleUrls: ['./register.component.scss'] // uncomment if the file exists
 })
-export class RegisterComponent {
+export /**
+ * RegisterComponent: myFlix Angular component/service/model.
+ */
+class RegisterComponent {
   private fb = inject(FormBuilder);
   private api = inject(FetchApiDataService);
   private snack = inject(MatSnackBar);
@@ -96,3 +103,5 @@ export class RegisterComponent {
     this.dialogRef?.close();
   }
 }
+
+

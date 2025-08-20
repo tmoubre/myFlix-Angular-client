@@ -21,3 +21,5 @@ describe('MovieView', () => {
     expect(component).toBeTruthy();
   });
 });
+
+

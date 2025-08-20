@@ -21,3 +21,5 @@ describe('RegistrationDialog', () => {
     expect(component).toBeTruthy();
   });
 });
+
+

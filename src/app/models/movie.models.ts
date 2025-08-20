@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/models/movie.models.ts
+ * @packageDocumentation
+ */
 // src/app/models/movie.models.ts
 export interface Genre { name: string; description?: string; }
 export interface Director { name: string; bio?: string; birth?: string; death?: string; }
@@ -80,3 +84,5 @@ export function normalizeMovie(raw: any): Movie {
 export function normalizeMovies(list: any[]): Movie[] {
   return Array.isArray(list) ? list.map(normalizeMovie) : [];
 }
+
+

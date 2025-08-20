@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/features/welcome/login.component.ts
+ * @packageDocumentation
+ */
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -24,7 +28,10 @@ import { FetchApiDataService } from '../../fetch-api-data.service';
   // If you DON'T have this file, either create it or remove this line:
   // styleUrls: ['./login.component.scss']
 })
-export class LoginComponent {
+export /**
+ * LoginComponent: myFlix Angular component/service/model.
+ */
+class LoginComponent {
   private fb = inject(FormBuilder);
   private api = inject(FetchApiDataService);
   private router = inject(Router);
@@ -72,6 +79,8 @@ export class LoginComponent {
     });
   }
 }
+
+
 
 
 

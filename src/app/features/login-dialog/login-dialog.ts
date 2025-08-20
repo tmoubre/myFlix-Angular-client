@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/features/login-dialog/login-dialog.ts
+ * @packageDocumentation
+ */
 // src/app/features/login-dialog/login-dialog.ts
 import { Component, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -15,7 +19,10 @@ import { FetchApiDataService, LoginPayload, LoginResponse } from '../../fetch-ap
   templateUrl: './login-dialog.html',
   styleUrls: ['./login-dialog.scss']
 })
-export class LoginDialogComponent {
+export /**
+ * LoginDialogComponent: myFlix Angular component/service/model.
+ */
+class LoginDialogComponent {
   loading = false;
   form!: FormGroup;
 
@@ -48,3 +55,5 @@ export class LoginDialogComponent {
     });
   }
 }
+
+

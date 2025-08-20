@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/features/movies/movie-card/movie-card.component.ts
+ * @packageDocumentation
+ */
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -15,7 +19,10 @@ const HOST = 'https://film-app-f9566a043197.herokuapp.com';
   templateUrl: './movie-card.component.html',
   styleUrls: ['./movie-card.component.scss']
 })
-export class MovieCardComponent {
+export /**
+ * MovieCardComponent: myFlix Angular component/service/model.
+ */
+class MovieCardComponent {
   @Input() movie!: any;
   @Input() favorite = false;
 
@@ -59,6 +66,8 @@ export class MovieCardComponent {
     (ev.target as HTMLImageElement).src = PLACEHOLDER;
   }
 }
+
+
 
 
 

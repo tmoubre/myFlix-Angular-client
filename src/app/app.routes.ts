@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/app.routes.ts
+ * @packageDocumentation
+ */
 // src/app/app.routes.ts
 import { Routes } from '@angular/router';
 import { canActivateAuth } from './core/auth-guard';
@@ -18,6 +22,8 @@ export const routes: Routes = [
 
   { path: '**', redirectTo: 'login' }
 ];
+
+
 
 
 

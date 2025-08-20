@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/features/welcome/welcome-page.component.ts
+ * @packageDocumentation
+ */
 // src/app/features/welcome/welcome-page.component.ts
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -14,7 +18,10 @@ import { LoginComponent } from './login.component';
   imports: [CommonModule, MatButtonModule, MatDialogModule],
   templateUrl: './welcome-page.component.html',
 })
-export class WelcomePageComponent {
+export /**
+ * WelcomePageComponent: myFlix Angular component/service/model.
+ */
+class WelcomePageComponent {
   private dialog = inject(MatDialog);
 
   openRegisterDialog() {
@@ -25,3 +32,5 @@ export class WelcomePageComponent {
     this.dialog.open(LoginComponent, { width: '360px', disableClose: true });
   }
 }
+
+

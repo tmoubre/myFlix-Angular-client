@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/features/director-view/director-view.ts
+ * @packageDocumentation
+ */
 import { Component } from '@angular/core';
 
 @Component({
@@ -6,6 +10,11 @@ import { Component } from '@angular/core';
   templateUrl: './director-view.html',
   styleUrl: './director-view.scss'
 })
-export class DirectorView {
+export /**
+ * DirectorView: myFlix Angular component/service/model.
+ */
+class DirectorView {
 
 }
+
+

@@ -1,3 +1,7 @@
+/**
+ * Source: src/app/auth.guard.ts
+ * @packageDocumentation
+ */
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 
@@ -7,3 +11,5 @@ export const authGuard: CanActivateFn = () => {
   if (!hasToken) { router.navigateByUrl('/login'); return false; }
   return true;
 };
+
+

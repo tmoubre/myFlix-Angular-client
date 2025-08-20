@@ -21,3 +21,5 @@ describe('MovieCard', () => {
     expect(component).toBeTruthy();
   });
 });
+
+
