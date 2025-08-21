@@ -8,8 +8,9 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Movie, normalizeMovies } from './models/movie.models';
+import { environment } from '../environments/environment';
 
-const BASE = '/api'; // dev proxy to Heroku
+const BASE = environment.apiUrl;
 
 export interface User {
   _id: string;
@@ -115,5 +116,3 @@ class FetchApiDataService {
     });
   }
 }
-
-
